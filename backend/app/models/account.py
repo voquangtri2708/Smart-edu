@@ -1,5 +1,6 @@
 from app import db
 from datetime import datetime
+import bcrypt
 
 class Account(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -13,6 +14,12 @@ class Account(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)  # 1 = Active, 0 = Inactive
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def set_password(self, password):
+        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
 
     def __repr__(self):
         return f'<Account {self.username}>'

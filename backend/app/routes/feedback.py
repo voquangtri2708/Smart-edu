@@ -10,8 +10,8 @@ def create_feedback():
     new_feedback = Feedback(
         content=data.get('content'),
         student_id=data['student_id'],
-        classroom_id=data['classroom_id'],
-        teacher_id=data['teacher_id'],
+        classroom_id=data.get('classroom_id'),
+        teacher_id=data.get('teacher_id'),
         sentiment=data.get('sentiment', 'Trung lập')
     )
     db.session.add(new_feedback)
@@ -46,24 +46,24 @@ def get_feedback(id):
         "sentiment": feedback.sentiment
     })
 
-@feedback_bp.route('/feedbacks/<int:id>', methods=['PUT'])
-def update_feedback(id):
-    data = request.get_json()
-    feedback = Feedback.query.get_or_404(id)
+# @feedback_bp.route('/feedbacks/<int:id>', methods=['PUT'])
+# def update_feedback(id):
+#     data = request.get_json()
+#     feedback = Feedback.query.get_or_404(id)
     
-    if 'content' in data:
-        feedback.content = data['content']
-    if 'student_id' in data:
-        feedback.student_id = data['student_id']
-    if 'classroom_id' in data:
-        feedback.classroom_id = data['classroom_id']
-    if 'teacher_id' in data:
-        feedback.teacher_id = data['teacher_id']
-    if 'sentiment' in data:
-        feedback.sentiment = data['sentiment']
+#     if 'content' in data:
+#         feedback.content = data['content']
+#     if 'student_id' in data:
+#         feedback.student_id = data['student_id']
+#     if 'classroom_id' in data:
+#         feedback.classroom_id = data['classroom_id']
+#     if 'teacher_id' in data:
+#         feedback.teacher_id = data['teacher_id']
+#     if 'sentiment' in data:
+#         feedback.sentiment = data['sentiment']
     
-    db.session.commit()
-    return jsonify({"message": "Feedback updated successfully"})
+#     db.session.commit()
+#     return jsonify({"message": "Feedback updated successfully"})
 
 @feedback_bp.route('/feedbacks/<int:id>', methods=['DELETE'])
 def delete_feedback(id):

@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models.account import Account
-from datetime import datetime
 
 account_bp = Blueprint('account', __name__)
 
@@ -12,15 +11,24 @@ def create_account():
         username=data['username'],
         email=data.get('email'),
         phone_number=data.get('phone_number'),
-        password=data['password'],  # Lưu ý: cần hash mật khẩu trước khi lưu
         role=data['role'],
         student_id=data.get('student_id'),
         teacher_id=data.get('teacher_id'),
         is_active=data.get('is_active', True)
     )
+    new_account.set_password(data['password'])  # Mã hóa mật khẩu trước khi lưu
     db.session.add(new_account)
     db.session.commit()
     return jsonify({"message": "Account created successfully"}), 201
+
+@account_bp.route('/accounts/login', methods=['POST'])
+def login_account():
+    data = request.get_json()
+    account = Account.query.filter_by(username=data['username']).first()
+    if account and account.check_password(data['password']):
+        return jsonify({"message": "Login successful"}), 200
+    else:
+        return jsonify({"message": "Invalid username or password"}), 401
 
 @account_bp.route('/accounts', methods=['GET'])
 def get_accounts():
@@ -28,6 +36,7 @@ def get_accounts():
     return jsonify([{
         "id": account.id,
         "username": account.username,
+        "password": account.password,
         "email": account.email,
         "phone_number": account.phone_number,
         "role": account.role,
@@ -44,6 +53,7 @@ def get_account(id):
     return jsonify({
         "id": account.id,
         "username": account.username,
+        "password": account.password,
         "email": account.email,
         "phone_number": account.phone_number,
         "role": account.role,
@@ -66,7 +76,7 @@ def update_account(id):
     if 'phone_number' in data:
         account.phone_number = data['phone_number']
     if 'password' in data:
-        account.password = data['password']  # Lưu ý: cần hash mật khẩu trước khi lưu
+        account.set_password(data['password'])  # Mã hóa mật khẩu trước khi lưu
     if 'role' in data:
         account.role = data['role']
     if 'student_id' in data:
