@@ -17,6 +17,11 @@ def create_app():
     from app.routes.student import student_bp
     from app.routes.subject import subject_bp
     from app.routes.teacher import teacher_bp
+    from app.routes.campus import campus_bp
+    from app.routes.building import building_bp
+    from app.routes.classroom import classroom_bp
+    from app.routes.feedback import feedback_bp
+    from app.routes.class_teacher import class_teacher_bp
 
     app.register_blueprint(predict_bp, url_prefix="/api")
     app.register_blueprint(account_bp, url_prefix="/api")
@@ -25,5 +30,10 @@ def create_app():
     app.register_blueprint(student_bp, url_prefix="/api")
     app.register_blueprint(subject_bp, url_prefix="/api")
     app.register_blueprint(teacher_bp, url_prefix="/api")
+    app.register_blueprint(campus_bp, url_prefix="/api")
+    app.register_blueprint(building_bp, url_prefix="/api")
+    app.register_blueprint(classroom_bp, url_prefix="/api")
+    app.register_blueprint(feedback_bp, url_prefix="/api")
+    app.register_blueprint(class_teacher_bp, url_prefix="/api")
 
     return app
