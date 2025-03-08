@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS  # Import CORS
 
 db = SQLAlchemy()
 
@@ -8,6 +9,7 @@ def create_app():
     app.config.from_object("config.Config")
 
     db.init_app(app)
+    CORS(app)  # Enable CORS
 
     # Import và đăng ký Blueprint sau khi tạo app
     from app.routes.predict import predict_bp

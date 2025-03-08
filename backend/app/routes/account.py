@@ -24,11 +24,19 @@ def create_account():
 @account_bp.route('/accounts/login', methods=['POST'])
 def login_account():
     data = request.get_json()
-    account = Account.query.filter_by(username=data['username']).first()
+
+    # Tìm tài khoản theo username, email hoặc số điện thoại
+    account = Account.query.filter(
+        (Account.username == data['identifier']) |
+        (Account.email == data['identifier']) |
+        (Account.phone_number == data['identifier'])
+    ).first()
+
+    # Kiểm tra tài khoản & mật khẩu
     if account and account.check_password(data['password']):
         return jsonify({"message": "Login successful"}), 200
     else:
-        return jsonify({"message": "Invalid username or password"}), 401
+        return jsonify({"message": "Invalid credentials"}), 401
 
 @account_bp.route('/accounts', methods=['GET'])
 def get_accounts():
@@ -36,7 +44,6 @@ def get_accounts():
     return jsonify([{
         "id": account.id,
         "username": account.username,
-        "password": account.password,
         "email": account.email,
         "phone_number": account.phone_number,
         "role": account.role,
@@ -53,7 +60,6 @@ def get_account(id):
     return jsonify({
         "id": account.id,
         "username": account.username,
-        "password": account.password,
         "email": account.email,
         "phone_number": account.phone_number,
         "role": account.role,
