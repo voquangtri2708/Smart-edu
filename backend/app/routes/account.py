@@ -32,10 +32,13 @@ def login_account():
         (Account.phone_number == data['identifier'])
     ).first()
 
+    if not account:
+        return jsonify({"message": "Invalid credentials"}), 404
+
     # Kiểm tra tài khoản & mật khẩu
     if account and account.check_password(data['password']):
-        return jsonify({"message": "Login successful"}), 200
-    else:
+        return jsonify({"message": "Login successful", "role" : account.role , "username" : account.username}), 200
+    else :
         return jsonify({"message": "Invalid credentials"}), 401
 
 @account_bp.route('/accounts', methods=['GET'])
