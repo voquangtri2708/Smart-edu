@@ -1,8 +1,10 @@
 import re
 import pickle
 from pyvi import ViTokenizer
+import os
 
-with open("word2id.pkl", "rb") as f:
+file_path = os.path.join(os.path.dirname(__file__), "word2id_02.pkl")
+with open(file_path, "rb") as f:
     word2id = pickle.load(f)
 
 def _preprocess_input(text):
@@ -13,7 +15,7 @@ def _preprocess_input(text):
     return text.split()
 
 
-def text2vec(text, max_length=80):
+def text2vec(text, max_length=10):
     input_ids = [word2id.get(word, 1) for word in _preprocess_input(text)]  # Chuyển thành ID (1 nếu không có trong từ điển)
 
     # 2️⃣ Padding/truncate để đảm bảo đúng kích thước đầu vào

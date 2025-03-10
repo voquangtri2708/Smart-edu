@@ -15,23 +15,25 @@ class FastTextClassifier(nn.Module):
         return out
 
 
-class FastTextClassifier(nn.Module):
-    def __init__(self, vocab_size, embed_dim, num_classes_sentiment, num_classes_topic):
-        super(FastTextClassifier, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, embed_dim)
 
-        # Hai fully connected layers cho sentiment và topic
-        self.fc_sentiment = nn.Linear(embed_dim, num_classes_sentiment)
-        self.fc_topic = nn.Linear(embed_dim, num_classes_topic)
+# class FastTextClassifier(nn.Module):
+#     def __init__(self, vocab_size, embed_dim, num_classes_sentiment, num_classes_topic):
+#         super(FastTextClassifier, self).__init__()
+#         self.embedding = nn.Embedding(vocab_size, embed_dim)
 
-    def forward(self, x):
-        embedded = self.embedding(x)  # Lấy vector embedding
-        x = embedded.mean(dim=1)  # Trung bình vector từ
+#         # Hai fully connected layers cho sentiment và topic
+#         self.fc_sentiment = nn.Linear(embed_dim, num_classes_sentiment)
+#         self.fc_topic = nn.Linear(embed_dim, num_classes_topic)
 
-        # Dự đoán sentiment
-        sentiment_out = self.fc_sentiment(x)
+#     def forward(self, x):
+#         embedded = self.embedding(x)  # Lấy vector embedding
+#         x = embedded.mean(dim=1)  # Trung bình vector từ
 
-        # Dự đoán topic
-        topic_out = self.fc_topic(x)
+#         # Dự đoán sentiment
+#         sentiment_out = self.fc_sentiment(x)
 
-        return sentiment_out, topic_out
+#         # Dự đoán topic
+#         topic_out = self.fc_topic(x)
+
+#         return sentiment_out, topic_out
+
