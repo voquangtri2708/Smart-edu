@@ -46,6 +46,7 @@
   const showPassword = ref(false);
   const identifier = ref("");
   const password = ref("");
+  const isActive = ref(true);
   const errorMessage = ref("");
   const router = useRouter();
   
@@ -66,7 +67,10 @@
         identifier: identifier.value,
         password: password.value,
       });
-  
+      if (isActive.value = response.data.isActive === false) {
+        errorMessage.value = "Tài khoản của bạn đã bị khóa!";
+        return;
+      }
       localStorage.setItem("user_role", response.data.role);
       localStorage.setItem("username", response.data.username);
       router.push("/");

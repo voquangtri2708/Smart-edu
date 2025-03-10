@@ -33,13 +33,13 @@ def login_account():
     ).first()
 
     if not account:
-        return jsonify({"message": "Invalid credentials"}), 404
+        return jsonify(), 404
 
     # Kiểm tra tài khoản & mật khẩu
     if account and account.check_password(data['password']):
-        return jsonify({"message": "Login successful", "role" : account.role , "username" : account.username}), 200
+        return jsonify({"role" : account.role , "username" : account.username, "isActive" : account.is_active}), 200
     else :
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify(), 401
 
 @account_bp.route('/accounts', methods=['GET'])
 def get_accounts():
