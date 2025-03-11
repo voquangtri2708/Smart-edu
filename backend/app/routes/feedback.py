@@ -1,22 +1,39 @@
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models.feedback import Feedback
+from app.ml.pred import prediction
 
 feedback_bp = Blueprint('feedback', __name__)
 
 @feedback_bp.route('/feedbacks', methods=['POST'])
 def create_feedback():
     data = request.get_json()
+    content = data.get('content')
+    
+    # Dự đoán sentiment sử dụng model
+    sentiment_label = prediction(content)
+    sentiment_map = {0: "Tiêu cực", 1: "Trung lập", 2: "Tích cực"}
+    predicted_sentiment = sentiment_map[sentiment_label]
+    
     new_feedback = Feedback(
-        content=data.get('content'),
+        content=content,
         student_id=data['student_id'],
         classroom_id=data.get('classroom_id'),
         teacher_id=data.get('teacher_id'),
-        sentiment=data.get('sentiment', 'Trung lập')
+        sentiment=predicted_sentiment
     )
     db.session.add(new_feedback)
     db.session.commit()
-    return jsonify({"message": "Feedback created successfully"}), 201
+    
+    return jsonify({
+        "message": "Feedback created successfully",
+        "feedback": {
+            "id": new_feedback.id,
+            "content": new_feedback.content,
+            "sentiment": new_feedback.sentiment,
+            "created_at": new_feedback.created_at
+        }
+    }), 201
 
 @feedback_bp.route('/feedbacks', methods=['GET'])
 def get_feedbacks():

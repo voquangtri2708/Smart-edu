@@ -3,8 +3,12 @@ from .preprocess import text2vec
 from app.ml.model import FastTextClassifier  
 import os
 
+# Khởi tạo model với đúng kích thước vocabulary
+model = FastTextClassifier(vocab_size=3550, embed_dim=100, num_classes=3)
+
+# Load state dictionary
 file_path = os.path.join(os.path.dirname(__file__), "fasttext_model_02.pth")
-model = torch.load(file_path, map_location="cpu")
+model.load_state_dict(torch.load(file_path, map_location="cpu", weights_only=True))
 model.eval()
 
 def prediction(text):
@@ -25,16 +29,12 @@ def prediction(text):
     return predicted_class
     # return sentiment_pred, topic_pred
 
-
-# 🚀 Dự đoán một câu ví dụ
-label_map = {0: "tiêu_cực", 1: "bình_thường", 2: "tích_cực"}
-label_map2 = {0: "bài giảng", 1: "chương trình đào tạo", 2: "khác", 3: "cơ sở vật chất"}
-while True:
-    sentence = input("Input here: ")
-    if sentence == "0":
-        break
-    # sentiment_label, topic_label = prediction(sentence)
-    sentiment_label = prediction(sentence)
-
-    print(f"Sentiment Prediction: {label_map[sentiment_label]}")
-    # print(f"TopicTopic Prediction: {label_map2[topic_label]}")
+# Test prediction
+if __name__ == "__main__":
+    label_map = {0: "Tiêu cực", 1: "Trung lập", 2: "Tích cực"}
+    while True:
+        sentence = input("Input here: ")
+        if sentence == "0":
+            break
+        sentiment_label = prediction(sentence)
+        print(f"Sentiment Prediction: {label_map[sentiment_label]}")
