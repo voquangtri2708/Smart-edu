@@ -1,85 +1,68 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { useRoute } from 'vue-router';
+import { computed } from 'vue';
+import { RouterView } from 'vue-router';
+import NavBar from './components/NavBar.vue';
+import SideBar from './components/Sidebar.vue';
+
+const route = useRoute();
+
+// Kiểm tra nếu route hiện tại là "/login" thì ẩn NavBar & SideBar
+const showNavbar = computed(() => route.path !== "/login");
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div>
+    <!-- Chỉ hiển thị navbar nếu không phải trang login -->
+    <NavBar v-if="showNavbar" />
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <div class="layout">
+      <!-- Sidebar (chỉ hiển thị khi không ở trang login) -->
+      <SideBar v-if="showNavbar" />
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+      <!-- Nội dung chính -->
+      <main :class="{ 'with-navbar': showNavbar, 'with-sidebar': showNavbar }">
+        <RouterView />
+      </main>
     </div>
-  </header>
-
-  <RouterView />
+  </div>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+/* Layout chính chia thành 2 phần */
+.layout {
+  display: flex;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+/* Nếu có navbar, thêm khoảng trống bên trên */
+.with-navbar {
+  padding-top: 80px; /* Khoảng trống bằng chiều cao navbar */
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+/* Nếu có sidebar, tạo khoảng trống bên trái */
+.with-sidebar {
+  padding-left: 280px; /* Để tránh bị sidebar che mất nội dung */
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+/* Nội dung chính */
+main {
+  flex-grow: 1;
+  padding: 20px;
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+.full-width {
+  padding-left: 0 !important;
+  width: 100% !important;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+/* Ẩn sidebar trên màn hình nhỏ */
+@media screen and (max-width: 768px) {
+  .with-sidebar {
+    padding-left: 0;
   }
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
+  .layout {
+    flex-direction: column;
   }
 }
 </style>

@@ -1,23 +1,31 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import Login from '../views/LoginView.vue';
+import HomePageView from '@/views/HomePageView.vue';
+import InstructorFeedbackView from '@/views/InstructorFeedbackView.vue';
+import ClassroomFeedbackView from '@/views/ClassroomFeedbackView.vue';
+
+const routes = [
+  { path: "/", component: HomePageView },
+  { path: "/login", component: Login },
+  { path: "/instructor-feedbacks", component: InstructorFeedbackView },
+  { path: "/classroom-feedbacks", component: ClassroomFeedbackView },
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
-})
+  history: createWebHistory(),
+  routes,
+});
 
-export default router
+router.beforeEach((to, from, next) => {
+  const isLoggedIn = localStorage.getItem("user_role"); 
+
+  if (!isLoggedIn && to.path !== "/login") {
+    next("/login");
+  } else if (isLoggedIn && to.path === "/login") {
+    next("/"); 
+  } else {
+    next(); 
+  }
+});
+
+export default router;
