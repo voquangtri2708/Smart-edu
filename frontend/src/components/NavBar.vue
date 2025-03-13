@@ -1,3 +1,4 @@
+<!-- filepath: d:\Code\Smart-edu\frontend\src\components\NavBar.vue -->
 <template>
   <nav :class="{ 'scrolled': isScrolled }" class="navbar">
     <div class="container-fluid">
@@ -15,10 +16,10 @@
 
       <!-- Profile menu (Ẩn trên màn hình nhỏ) -->
       <div class="profile-menu dropdown d-none d-md-block">
-        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" id="profileDropdown" @click="toggleProfileMenu">
           {{ username }}
         </a>
-        <ul class="dropdown-menu dropdown-menu-end">
+        <ul class="dropdown-menu dropdown-menu-end" :class="{ 'show': isProfileMenuOpen }">
           <li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
           <li><button class="dropdown-item" @click="logout">Đăng xuất</button></li>
         </ul>
@@ -79,6 +80,7 @@ const role = ref("student"); // Thay đổi thành "teacher" để test
 const isScrolled = ref(false);
 const isMenuOpen = ref(false);
 const isSidebarOpen = ref(true); // Trạng thái của sidebar
+const isProfileMenuOpen = ref(false); // Thêm trạng thái cho profile dropdown
 const submenuOpen = ref({
   study: false,
   feedback: false,
@@ -89,12 +91,28 @@ const router = useRouter();
 
 onMounted(() => {
   username.value = localStorage.getItem("username") || "Người dùng";
+  role.value = localStorage.getItem("user_role") || "student";
   window.addEventListener("scroll", handleScroll);
+  
+  // Đóng dropdown khi click ra ngoài
+  document.addEventListener('click', closeDropdownsOnOutsideClick);
 });
 
 onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
+  document.removeEventListener('click', closeDropdownsOnOutsideClick);
 });
+
+const closeDropdownsOnOutsideClick = (event) => {
+  // Kiểm tra xem click có nằm ngoài dropdown không
+  const dropdownElement = document.querySelector('.profile-menu');
+  const dropdownToggle = document.querySelector('#profileDropdown');
+  
+  if (dropdownElement && !dropdownElement.contains(event.target) && 
+      dropdownToggle && !dropdownToggle.contains(event.target)) {
+    isProfileMenuOpen.value = false;
+  }
+};
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 50;
@@ -108,6 +126,13 @@ const logout = () => {
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
+};
+
+// Toggle profile dropdown
+const toggleProfileMenu = (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  isProfileMenuOpen.value = !isProfileMenuOpen.value;
 };
 
 // Toggle submenu
@@ -165,6 +190,21 @@ const toggleSidebar = () => {
   right: 50px;
 }
 
+.profile-menu .dropdown-toggle {
+  cursor: pointer;
+}
+
+.profile-menu .dropdown-toggle::after {
+  display: inline-block;
+  margin-left: 0.255em;
+  vertical-align: 0.255em;
+  content: "";
+  border-top: 0.3em solid;
+  border-right: 0.3em solid transparent;
+  border-bottom: 0;
+  border-left: 0.3em solid transparent;
+}
+
 /* Hamburger menu */
 .hamburger-menu {
   position: absolute;
@@ -200,8 +240,9 @@ const toggleSidebar = () => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   display: none;
   min-width: 220px;
-  word-wrap: break-word; /* Thêm thuộc tính này */
-  white-space: normal; /* Thêm thuộc tính này */
+  word-wrap: break-word;
+  white-space: normal;
+  z-index: 1001;
 }
 
 .dropdown-menu.show {
@@ -215,8 +256,9 @@ const toggleSidebar = () => {
 
 .dropdown-item {
   cursor: pointer;
-  word-wrap: break-word; /* Thêm thuộc tính này */
-  white-space: normal; /* Thêm thuộc tính này */
+  word-wrap: break-word;
+  white-space: normal;
+  padding: 0.5rem 1rem;
 }
 
 .dropdown-item:hover {

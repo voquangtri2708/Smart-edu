@@ -28,6 +28,7 @@ def create_app():
     from app.routes.classroom import classroom_bp
     from app.routes.teacher_feedback import teacher_feedback_bp
     from app.routes.classroom_feedback import classroom_feedback_bp
+    from app.routes.feedback_availability import feedback_availability_bp
 
     app.register_blueprint(account_bp, url_prefix="/api")
     app.register_blueprint(class_bp, url_prefix="/api")
@@ -41,5 +42,6 @@ def create_app():
     app.register_blueprint(classroom_bp, url_prefix="/api")
     app.register_blueprint(teacher_feedback_bp, url_prefix="/api")
     app.register_blueprint(classroom_feedback_bp, url_prefix="/api")
+    app.register_blueprint(feedback_availability_bp, url_prefix="/api")
 
     return app

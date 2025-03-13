@@ -37,8 +37,14 @@ def login_account():
 
     # Kiểm tra tài khoản & mật khẩu
     if account and account.check_password(data['password']):
-        return jsonify({"role" : account.role , "username" : account.username, "isActive" : account.is_active}), 200
-    else :
+        return jsonify({
+            "role": account.role,
+            "username": account.username,
+            "isActive": account.is_active,
+            "student_id": account.student_id,  # Thêm student_id
+            "teacher_id": account.teacher_id   # Thêm teacher_id
+        }), 200
+    else:
         return jsonify(), 401
 
 @account_bp.route('/accounts', methods=['GET'])

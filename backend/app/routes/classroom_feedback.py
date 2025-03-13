@@ -2,38 +2,74 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.classroom_feedback import ClassroomFeedback
 from app.models.classs import Class
+from app.models.class_student import ClassStudent
+from app.models.classroom import Classroom
 from app.ml.pred import prediction
-from datetime import timedelta
+from datetime import datetime, timedelta  # Thêm datetime
+from sqlalchemy.exc import IntegrityError
 
 classroom_feedback_bp = Blueprint('classroom_feedback', __name__)
 
 @classroom_feedback_bp.route('/classroom_feedbacks', methods=['POST'])
 def create_classroom_feedback():
     data = request.get_json()
+    student_id = data.get('student_id')
+    class_id = data.get('class_id')
+    classroom_id = data.get('classroom_id')
     content = data.get('content')
+    
+    # Kiểm tra học sinh có thuộc lớp không
+    student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
+    if not student_in_class:
+        return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
+    
+    # Kiểm tra phòng học có được sử dụng cho lớp không (giả định có liên kết class_schedule)
+    # Trong thực tế cần kiểm tra class_schedule để xác minh phòng học được dùng cho lớp này
+    
+    # Kiểm tra học sinh đã đánh giá phòng học trong lớp này chưa
+    existing_feedback = ClassroomFeedback.query.filter_by(
+        student_id=student_id,
+        class_id=class_id,
+        classroom_id=classroom_id
+    ).first()
+    
+    if existing_feedback:
+        return jsonify({"message": "Bạn đã đánh giá phòng học này trong lớp này"}), 409
+    
+    # Lấy start_date và end_date từ bảng class và tính end_date + 7 ngày
+    class_ = Class.query.get_or_404(class_id)
+    start_date = class_.start_date
+    end_date = class_.end_date + timedelta(days=7)
+    
+    # Kiểm tra thời gian có nằm trong khoảng cho phép đánh giá không
+    current_date = datetime.now().date()
+    if current_date < start_date:
+        return jsonify({"message": "Chưa đến thời gian đánh giá"}), 403
+    if current_date > end_date:
+        return jsonify({"message": "Đã kết thúc thời gian đánh giá"}), 403
     
     # Dự đoán sentiment sử dụng model
     sentiment_label = prediction(content)
     sentiment_map = {0: "negative", 1: "neutral", 2: "positive"}
     predicted_sentiment = sentiment_map[sentiment_label]
     
-    # Lấy start_date và end_date từ bảng class và tính end_date + 7 ngày
-    class_ = Class.query.get_or_404(data['class_id'])
-    start_date = class_.start_date
-    end_date = class_.end_date + timedelta(days=7)
-    
     new_feedback = ClassroomFeedback(
         content=content,
-        student_id=data['student_id'],
-        class_id=data['class_id'],
-        classroom_id=data['classroom_id'],
+        student_id=student_id,
+        class_id=class_id,
+        classroom_id=classroom_id,
         start_date=start_date,
         end_date=end_date,
         sentiment=predicted_sentiment
     )
-    db.session.add(new_feedback)
-    db.session.commit()
-    return jsonify({"message": "ClassroomFeedback created successfully"}), 201
+    
+    try:
+        db.session.add(new_feedback)
+        db.session.commit()
+        return jsonify({"message": "ClassroomFeedback created successfully"}), 201
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({"message": "Lỗi: " + str(e)}), 400
 
 @classroom_feedback_bp.route('/classroom_feedbacks', methods=['GET'])
 def get_classroom_feedbacks():
@@ -96,3 +132,41 @@ def delete_classroom_feedback(id):
     db.session.delete(feedback)
     db.session.commit()
     return jsonify({"message": "ClassroomFeedback deleted successfully"})
+
+@classroom_feedback_bp.route('/classroom_feedbacks/student/<string:student_id>/classes/<int:class_id>/classrooms', methods=['GET'])
+def get_classrooms_for_feedback(student_id, class_id):
+    """Lấy danh sách phòng học mà học sinh có thể đánh giá"""
+    
+    # Kiểm tra học sinh có thuộc lớp không
+    student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
+    if not student_in_class:
+        return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
+    
+    # Thực tế cần lấy từ class_schedule
+    # Ở đây để đơn giản, giả sử có danh sách phòng học gán cho lớp
+    # Trong triển khai thực tế, lấy từ bảng class_schedule
+    
+    # Lấy danh sách phòng học đã được đánh giá bởi học sinh này trong lớp này
+    evaluated_classrooms = db.session.query(ClassroomFeedback.classroom_id).filter_by(
+        student_id=student_id,
+        class_id=class_id
+    ).all()
+    
+    evaluated_classroom_ids = [c.classroom_id for c in evaluated_classrooms]
+    
+    # Lấy tất cả phòng học (đơn giản hóa, thực tế cần lấy từ class_schedule)
+    classrooms = Classroom.query.all()
+    
+    # Lọc ra các phòng học chưa được đánh giá
+    available_classrooms = []
+    
+    for classroom in classrooms:
+        if classroom.id not in evaluated_classroom_ids:
+            available_classrooms.append({
+                "id": classroom.id,
+                "room_number": classroom.room_number,
+                "capacity": classroom.capacity,
+                "building_id": classroom.building_id
+            })
+    
+    return jsonify(available_classrooms)

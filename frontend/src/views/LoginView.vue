@@ -55,26 +55,38 @@
   };
   
   const login = async () => {
-    errorMessage.value = "";
+  errorMessage.value = "";
+  
+  if (!identifier.value || !password.value) {
+    errorMessage.value = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu";
+    return;
+  }
+
+  try {
+    const response = await axios.post("http://localhost:5000/api/accounts/login", {
+      identifier: identifier.value,
+      password: password.value,
+    });
     
-    if (!identifier.value || !password.value) {
-      errorMessage.value = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu";
+    if (response.data.isActive === false) {
+      errorMessage.value = "Tài khoản của bạn đã bị khóa!";
       return;
     }
-  
-    try {
-      const response = await axios.post("http://localhost:5000/api/accounts/login", {
-        identifier: identifier.value,
-        password: password.value,
-      });
-      if (isActive.value = response.data.isActive === false) {
-        errorMessage.value = "Tài khoản của bạn đã bị khóa!";
-        return;
-      }
-      localStorage.setItem("user_role", response.data.role);
-      localStorage.setItem("username", response.data.username);
-      router.push("/");
-    } catch (error) {
+    
+    // Lưu thông tin người dùng
+    localStorage.setItem("user_role", response.data.role);
+    localStorage.setItem("username", response.data.username);
+    
+    // Lưu student_id hoặc teacher_id nếu có
+    if (response.data.student_id) {
+      localStorage.setItem("student_id", response.data.student_id);
+    }
+    if (response.data.teacher_id) {
+      localStorage.setItem("teacher_id", response.data.teacher_id);
+    }
+    
+    router.push("/");
+  } catch (error) {
       if (error.response) {
         switch (error.response.status) {
           case 404:
