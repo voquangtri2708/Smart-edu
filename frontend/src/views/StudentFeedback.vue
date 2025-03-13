@@ -13,7 +13,7 @@
           <select class="form-select" id="classSelect" v-model="selectedClassId" @change="loadData">
             <option value="">-- Chọn lớp học --</option>
             <option v-for="class_ in classes" :key="class_.id" :value="class_.id">
-              {{ class_.code }} - {{ class_.subject_code }}
+               {{ class_.subject_code }} {{ class_.code }}
             </option>
           </select>
         </div>

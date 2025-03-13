@@ -1,16 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
-import InstructorFeedbackView from '@/views/InstructorFeedbackView.vue';
-import ClassroomFeedbackView from '@/views/ClassroomFeedbackView.vue';
 import StudentFeedback from '@/views/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/AdminFeedbackManagement.vue';
 
 const routes = [
   { path: "/", component: HomePageView },
   { path: "/login", component: Login },
-  { path: "/instructor-feedbacks", component: InstructorFeedbackView },
-  { path: "/classroom-feedbacks", component: ClassroomFeedbackView },
   { path: "/student-feedbacks", component: StudentFeedback },
   { path: "/admin-feedback-management", component: AdminFeedbackManagement },
 ];

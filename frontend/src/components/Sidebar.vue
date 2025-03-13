@@ -1,53 +1,101 @@
+<!-- filepath: d:\Code\Smart-edu\frontend\src\components\Sidebar.vue -->
 <template>
-  <div class="sidebar">
-    <!-- Nếu là Student -->
-    <div v-if="role === 'student'">
-      <div class="menu-item" @click="toggleMenu('study')">
-        Học tập <i :class="getIconClass('study')"></i>
-      </div>
-      <ul v-if="menuOpen.study" class="submenu">
-        <li><router-link to="#">Lịch học</router-link></li>
-        <li><router-link to="#">Bảng điểm</router-link></li>
-      </ul>
+  <div class="sidebar" :class="{ 'hidden': !isExpanded }">
+    <div class="sidebar-inner">
+      <!-- Nếu là Student -->
+      <div v-if="role === 'student'" class="sidebar-section">
+        <div class="section-title">
+          <i class="bi bi-mortarboard me-2"></i>Học tập
+        </div>
+        
+        <div class="menu-item" @click="toggleMenu('study')">
+          <div class="menu-item-content">
+            <i class="bi bi-book me-2"></i>
+            <span>Học tập</span>
+          </div>
+          <i :class="getIconClass('study')"></i>
+        </div>
+        
+        <div v-if="menuOpen.study" class="submenu">
+          <router-link to="#" class="submenu-item">
+            <i class="bi bi-calendar3 me-2"></i>Lịch học
+          </router-link>
+          <router-link to="#" class="submenu-item">
+            <i class="bi bi-table me-2"></i>Bảng điểm
+          </router-link>
+        </div>
 
-      <div class="menu-item" @click="toggleMenu('survey')">
-        Đánh giá & Khảo sát <i :class="getIconClass('survey')"></i>
+        <div class="menu-item" @click="toggleMenu('survey')">
+          <div class="menu-item-content">
+            <i class="bi bi-star me-2"></i>
+            <span>Đánh giá & Khảo sát</span>
+          </div>
+          <i :class="getIconClass('survey')"></i>
+        </div>
+        
+        <div v-if="menuOpen.survey" class="submenu">
+          <router-link to="/student-feedbacks" class="submenu-item" active-class="active">
+            <i class="bi bi-chat-square-text me-2"></i>Đánh giá và khảo sát
+          </router-link>
+        </div>
       </div>
-      <ul v-if="menuOpen.survey" class="submenu">
-        <li><router-link to="/instructor-feedbacks">Đánh giá giảng viên</router-link></li>
-        <li><router-link to="/classroom-feedbacks">Đánh giá phòng học</router-link></li>
-        <li><router-link to="/student-feedbacks">Đánh giá của học sinh</router-link></li> <!-- Thêm liên kết đến trang StudentFeedback -->
-      </ul>
-    </div>
 
-    <!-- Nếu là Teacher -->
-    <div v-if="role === 'teacher'">
-      <div class="menu-item" @click="toggleMenu('teaching')">
-        Giảng dạy <i :class="getIconClass('teaching')"></i>
+      <!-- Nếu là Teacher -->
+      <div v-if="role === 'teacher'" class="sidebar-section">
+        <div class="section-title">
+          <i class="bi bi-person-badge me-2"></i>Giảng dạy
+        </div>
+        
+        <div class="menu-item" @click="toggleMenu('teaching')">
+          <div class="menu-item-content">
+            <i class="bi bi-easel2 me-2"></i>
+            <span>Giảng dạy</span>
+          </div>
+          <i :class="getIconClass('teaching')"></i>
+        </div>
+        
+        <div v-if="menuOpen.teaching" class="submenu">
+          <router-link to="#" class="submenu-item">
+            <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
+          </router-link>
+          <router-link to="#" class="submenu-item">
+            <i class="bi bi-pencil-square me-2"></i>Nhập điểm sinh viên
+          </router-link>
+        </div>
       </div>
-      <ul v-if="menuOpen.teaching" class="submenu">
-        <li><router-link to="#">Lịch dạy</router-link></li>
-        <li><router-link to="#">Nhập điểm sinh viên</router-link></li>
-      </ul>
-    </div>
 
-    <!-- Nếu là Admin -->
-    <div v-if="role === 'admin'">
-      <div class="menu-item" @click="toggleMenu('management')">
-        Quản lý <i :class="getIconClass('management')"></i>
+      <!-- Nếu là Admin -->
+      <div v-if="role === 'admin'" class="sidebar-section">
+        <div class="section-title">
+          <i class="bi bi-gear me-2"></i>Quản lý hệ thống
+        </div>
+        
+        <div class="menu-item" @click="toggleMenu('management')">
+          <div class="menu-item-content">
+            <i class="bi bi-bar-chart-line me-2"></i>
+            <span>Quản lý đánh giá</span>
+          </div>
+          <i :class="getIconClass('management')"></i>
+        </div>
+        
+        <div v-if="menuOpen.management" class="submenu">
+          <router-link to="/admin-feedback-management" class="submenu-item" active-class="active">
+            <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
+          </router-link>
+        </div>
       </div>
-      <ul v-if="menuOpen.management" class="submenu">
-        <li><router-link to="/admin-feedback-management">Quản lý đánh giá</router-link></li> <!-- Thêm liên kết đến trang AdminFeedbackManagement -->
-      </ul>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
+import { useRoute } from 'vue-router';
 
-// Giả lập role, có thể lấy từ Vuex/Pinia hoặc API
+// Biến lưu role người dùng
 const role = ref("");
+const isExpanded = ref(true);
+const route = useRoute();
 
 // Trạng thái mở menu
 const menuOpen = ref({
@@ -59,8 +107,39 @@ const menuOpen = ref({
 
 // Lấy role từ localStorage khi component được mount
 onMounted(() => {
-  role.value = localStorage.getItem("user_role") || "student"; // Mặc định là "student" nếu không có role
+  role.value = localStorage.getItem("user_role") || "student";
+  
+  // Mở menu dựa vào route hiện tại
+  highlightActiveMenu();
+  
+  // Kiểm tra trạng thái sidebar từ localStorage
+  const savedState = localStorage.getItem("sidebar_expanded");
+  if (savedState !== null) {
+    isExpanded.value = savedState === "true";
+  }
 });
+
+// Theo dõi thay đổi route để highlight menu tương ứng
+watch(() => route.path, () => {
+  highlightActiveMenu();
+});
+
+// Highlight menu đang active
+const highlightActiveMenu = () => {
+  const path = route.path;
+  
+  // Reset tất cả
+  Object.keys(menuOpen.value).forEach(key => {
+    menuOpen.value[key] = false;
+  });
+  
+  // Mở menu phù hợp với route hiện tại
+  if (path.includes('student-feedbacks')) {
+    menuOpen.value.survey = true;
+  } else if (path.includes('admin-feedback-management')) {
+    menuOpen.value.management = true;
+  }
+};
 
 // Toggle menu
 const toggleMenu = (menu) => {
@@ -76,67 +155,110 @@ const getIconClass = (menu) => {
 <style scoped>
 .sidebar {
   position: fixed;
-  top: 80px; /* Khoảng trống bằng chiều cao navbar */
+  top: 70px; /* Khoảng trống bằng chiều cao navbar */
   left: 0;
   width: 280px;
-  height: calc(100vh - 80px); /* Chiều cao trừ đi chiều cao navbar */
+  height: calc(100vh - 70px); /* Chiều cao trừ đi chiều cao navbar */
   background: white;
-  padding: 15px;
-  box-shadow: 4px 0 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
   overflow-y: auto;
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease, width 0.3s ease;
+  z-index: 100;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .sidebar.hidden {
-  transform: translateX(-100%);
+  transform: translateX(-280px);
+}
+
+.sidebar-inner {
+  padding: 15px 0;
+}
+
+.sidebar-section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #777;
+  padding: 10px 20px;
+  letter-spacing: 1px;
 }
 
 /* Menu chính */
 .menu-item {
-  font-size: 16px;
-  font-weight: bold;
-  padding: 10px;
-  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #ddd;
-  word-wrap: break-word; /* Thêm thuộc tính này */
-  white-space: normal; /* Thêm thuộc tính này */
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+}
+
+.menu-item-content {
+  display: flex;
+  align-items: center;
 }
 
 .menu-item:hover {
-  background: #f0f0f0;
+  background-color: rgba(13, 110, 253, 0.05);
+  border-left-color: #0d6efd;
 }
 
 /* Submenu */
 .submenu {
-  list-style: none;
-  padding: 0;
-  margin-left: 15px;
+  margin: 5px 0;
+  padding-left: 20px;
 }
 
-.submenu li {
-  padding: 8px 0;
-}
-
-.submenu li a {
+.submenu-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  color: #555;
   text-decoration: none;
-  color: #333;
-  font-size: 14px;
-  word-wrap: break-word; /* Thêm thuộc tính này */
-  white-space: normal; /* Thêm thuộc tính này */
+  font-size: 0.95rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+  margin: 2px 0;
 }
 
-.submenu li a:hover {
-  color: #007bff;
+.submenu-item:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+  color: #0d6efd;
 }
 
-/* Biểu tượng */
+.submenu-item.active {
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  font-weight: 500;
+}
+
+/* Icons */
 .bi {
-  font-size: 14px;
+  font-size: 1rem;
 }
 
+/* Scrollbar styles */
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive */
 @media screen and (max-width: 768px) {
   .sidebar {
     display: none;

@@ -1,4 +1,3 @@
-<!-- filepath: d:\Code\Smart-edu\frontend\src\views\AdminFeedbackManagement.vue -->
 <template>
   <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -301,6 +300,9 @@ const toast = ref(null);
 const toastMessage = ref('');
 const toastType = ref('success');
 
+// Thêm biến để lưu trữ tất cả dữ liệu trước khi lọc
+const allFeedbacksData = ref([]);
+
 // Biến lưu trữ bộ lọc
 const filters = ref({
   feedbackType: 'all', // 'all', 'teacher', 'classroom'
@@ -324,6 +326,38 @@ const negativeCount = ref(0);
 const statisticsText = computed(() => {
   return `Tổng: ${totalItems.value} | Tích cực: ${positiveCount.value} | Trung lập: ${neutralCount.value} | Tiêu cực: ${negativeCount.value}`;
 });
+
+// Hàm tính toán số lượng từng loại sentiment từ dữ liệu đầy đủ
+const calculateSentimentCounts = (data) => {
+  positiveCount.value = data.filter(f => f.sentiment === 'positive').length;
+  neutralCount.value = data.filter(f => f.sentiment === 'neutral').length;
+  negativeCount.value = data.filter(f => f.sentiment === 'negative').length;
+};
+
+// Hàm tải toàn bộ dữ liệu để tính toán số lượng sentiment
+const fetchAllFeedbacks = async () => {
+  try {
+    let teacherFeedbacks = [];
+    let classroomFeedbacks = [];
+    
+    // Lấy toàn bộ dữ liệu đánh giá giảng viên
+    const teacherResponse = await axios.get('http://localhost:5000/api/teacher_feedbacks');
+    teacherFeedbacks = teacherResponse.data;
+    
+    // Lấy toàn bộ dữ liệu đánh giá phòng học
+    const classroomResponse = await axios.get('http://localhost:5000/api/classroom_feedbacks');
+    classroomFeedbacks = classroomResponse.data;
+    
+    // Kết hợp tất cả dữ liệu
+    allFeedbacksData.value = [...teacherFeedbacks, ...classroomFeedbacks];
+    
+    // Tính toán số lượng sentiment từ tất cả dữ liệu
+    calculateSentimentCounts(allFeedbacksData.value);
+    
+  } catch (error) {
+    console.error('Lỗi khi tải toàn bộ dữ liệu đánh giá:', error);
+  }
+};
 
 // Hàm lấy dữ liệu đánh giá
 const fetchFeedbacks = async () => {
@@ -391,10 +425,7 @@ const fetchFeedbacks = async () => {
       );
     }
 
-    // Cập nhật số lượng từng loại sentiment
-    positiveCount.value = allFeedbacks.filter(f => f.sentiment === 'positive').length;
-    neutralCount.value = allFeedbacks.filter(f => f.sentiment === 'neutral').length;
-    negativeCount.value = allFeedbacks.filter(f => f.sentiment === 'negative').length;
+    // Đã chuyển logic tính toán sentiment counts sang hàm fetchAllFeedbacks
 
     // Sắp xếp từ mới đến cũ
     allFeedbacks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -511,7 +542,10 @@ onMounted(async () => {
   // Khởi tạo Bootstrap Modal
   deleteModal.value = new Modal(document.getElementById('deleteModal'));
   
-  // Tải dữ liệu đánh giá
+  // Tải tất cả dữ liệu để tính toán số lượng sentiment
+  await fetchAllFeedbacks();
+  
+  // Tải dữ liệu đánh giá theo bộ lọc
   await fetchFeedbacks();
 });
 </script>
