@@ -12,12 +12,13 @@ def format_date(date):
 def create_class():
     data = request.get_json()
     new_class = Class(
-        id=data['id'],
         code=data['code'],
         max_student=data['max_student'],
         start_date=datetime.strptime(data['start_date'], '%Y-%m-%d').date(),
         end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date(),
-        subject_id=data['subject_id']
+        subject_id=data['subject_id'],
+        subject_code=data['subject_code'],
+        status=data.get('status', 'pending')
     )
     db.session.add(new_class)
     db.session.commit()
@@ -32,10 +33,12 @@ def get_classes():
         "max_student": class_.max_student,
         "start_date": format_date(class_.start_date),
         "end_date": format_date(class_.end_date),
-        "subject_id": class_.subject_id
+        "subject_id": class_.subject_id,
+        "subject_code": class_.subject_code,
+        "status": class_.status
     } for class_ in classes])
 
-@class_bp.route('/classes/<string:id>', methods=['GET'])
+@class_bp.route('/classes/<int:id>', methods=['GET'])
 def get_class(id):
     class_ = Class.query.get_or_404(id)
     return jsonify({
@@ -44,10 +47,12 @@ def get_class(id):
         "max_student": class_.max_student,
         "start_date": format_date(class_.start_date),
         "end_date": format_date(class_.end_date),
-        "subject_id": class_.subject_id
+        "subject_id": class_.subject_id,
+        "subject_code": class_.subject_code,
+        "status": class_.status
     })
 
-@class_bp.route('/classes/<string:id>', methods=['PUT'])
+@class_bp.route('/classes/<int:id>', methods=['PUT'])
 def update_class(id):
     data = request.get_json()
     class_ = Class.query.get_or_404(id)
@@ -62,11 +67,15 @@ def update_class(id):
         class_.end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
     if 'subject_id' in data:
         class_.subject_id = data['subject_id']
+    if 'subject_code' in data:
+        class_.subject_code = data['subject_code']
+    if 'status' in data:
+        class_.status = data['status']
     
     db.session.commit()
     return jsonify({"message": "Class updated successfully"})
 
-@class_bp.route('/classes/<string:id>', methods=['DELETE'])
+@class_bp.route('/classes/<int:id>', methods=['DELETE'])
 def delete_class(id):
     class_ = Class.query.get_or_404(id)
     db.session.delete(class_)

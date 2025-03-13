@@ -23,7 +23,7 @@ def get_class_students():
         "student_id": class_student.student_id
     } for class_student in class_students])
 
-@class_student_bp.route('/class_students/<string:class_id>/<string:student_id>', methods=['GET'])
+@class_student_bp.route('/class_students/<int:class_id>/<string:student_id>', methods=['GET'])
 def get_class_student(class_id, student_id):
     class_student = ClassStudent.query.get_or_404((class_id, student_id))
     return jsonify({
@@ -31,7 +31,7 @@ def get_class_student(class_id, student_id):
         "student_id": class_student.student_id
     })
 
-@class_student_bp.route('/class_students/<string:class_id>/<string:student_id>', methods=['PUT'])
+@class_student_bp.route('/class_students/<int:class_id>/<string:student_id>', methods=['PUT'])
 def update_class_student(class_id, student_id):
     data = request.get_json()
     class_student = ClassStudent.query.get_or_404((class_id, student_id))
@@ -44,7 +44,7 @@ def update_class_student(class_id, student_id):
     db.session.commit()
     return jsonify({"message": "ClassStudent updated successfully"})
 
-@class_student_bp.route('/class_students/<string:class_id>/<string:student_id>', methods=['DELETE'])
+@class_student_bp.route('/class_students/<int:class_id>/<string:student_id>', methods=['DELETE'])
 def delete_class_student(class_id, student_id):
     class_student = ClassStudent.query.get_or_404((class_id, student_id))
     db.session.delete(class_student)

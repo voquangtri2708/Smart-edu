@@ -16,6 +16,7 @@
       <ul v-if="menuOpen.survey" class="submenu">
         <li><router-link to="/instructor-feedbacks">Đánh giá giảng viên</router-link></li>
         <li><router-link to="/classroom-feedbacks">Đánh giá phòng học</router-link></li>
+        <li><router-link to="/student-feedbacks">Đánh giá của học sinh</router-link></li> <!-- Thêm liên kết đến trang StudentFeedback -->
       </ul>
     </div>
 
@@ -29,12 +30,21 @@
         <li><router-link to="#">Nhập điểm sinh viên</router-link></li>
       </ul>
     </div>
+
+    <!-- Nếu là Admin -->
+    <div v-if="role === 'admin'">
+      <div class="menu-item" @click="toggleMenu('management')">
+        Quản lý <i :class="getIconClass('management')"></i>
+      </div>
+      <ul v-if="menuOpen.management" class="submenu">
+        <li><router-link to="/admin-feedback-management">Quản lý đánh giá</router-link></li> <!-- Thêm liên kết đến trang AdminFeedbackManagement -->
+      </ul>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 
 // Giả lập role, có thể lấy từ Vuex/Pinia hoặc API
 const role = ref("");
@@ -44,6 +54,7 @@ const menuOpen = ref({
   study: false,
   survey: false,
   teaching: false,
+  management: false,
 });
 
 // Lấy role từ localStorage khi component được mount

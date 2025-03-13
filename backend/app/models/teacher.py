@@ -10,6 +10,11 @@ class Teacher(db.Model):
     last_name = db.Column(db.String(255), nullable=False)
     birthday = db.Column(db.Date, nullable=False)
     address = db.Column(db.String(255), nullable=False)
+    avatar_url = db.Column(db.String(255), default=None)
+    bio = db.Column(db.Text, nullable=True)
+    specialization = db.Column(db.String(255), nullable=True)
+    achievements = db.Column(db.Text, nullable=True)
+    teaching_philosophy = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f'<Teacher {self.first_name} {self.last_name}>'

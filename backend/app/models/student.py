@@ -10,6 +10,7 @@ class Student(db.Model):
     last_name = db.Column(db.String(255), nullable=False)
     birthday = db.Column(db.Date, nullable=False)
     address = db.Column(db.String(255), nullable=False)
+    avatar_url = db.Column(db.String(255), default=None)
 
     def __repr__(self):
         return f'<Student {self.first_name} {self.last_name}>'
