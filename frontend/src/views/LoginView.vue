@@ -73,9 +73,10 @@
       return;
     }
     
-    // Lưu thông tin người dùng
+    // Lưu thông tin người dùng và token
     localStorage.setItem("user_role", response.data.role);
     localStorage.setItem("username", response.data.username);
+    localStorage.setItem("auth_token", response.data.token); // Lưu JWT token
     
     // Lưu student_id hoặc teacher_id nếu có
     if (response.data.student_id) {
@@ -212,4 +213,3 @@
     margin-top: 5px;
   }
   </style>
-  

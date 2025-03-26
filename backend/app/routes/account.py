@@ -1,10 +1,46 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.account import Account
+import jwt
+import os
+from functools import wraps
 
 account_bp = Blueprint('account', __name__)
 
+# Middleware to authenticate admin users
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"message": "Không tìm thấy token xác thực"}), 401
+        
+        try:
+            # Get the token (remove 'Bearer ' if present)
+            token = auth_header.split("Bearer ")[1] if "Bearer " in auth_header else auth_header
+            
+            # Verify the token
+            secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
+            data = jwt.decode(token, secret_key, algorithms=["HS256"])
+            
+            # Check if user is admin
+            if data.get('role') != 'admin':
+                return jsonify({"message": "Bạn không có quyền thực hiện hành động này"}), 403
+                
+            # Store user info for the route handler
+            g.user_id = data.get('user_id')
+            g.role = data.get('role')
+            
+            return f(*args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            return jsonify({"message": "Token đã hết hạn"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"message": "Token không hợp lệ"}), 401
+        
+    return decorated_function
+
 @account_bp.route('/accounts', methods=['POST'])
+@admin_required
 def create_account():
     data = request.get_json()
     new_account = Account(
@@ -33,21 +69,30 @@ def login_account():
     ).first()
 
     if not account:
-        return jsonify(), 404
+        return jsonify({"message": "Tài khoản không tồn tại"}), 404
 
     # Kiểm tra tài khoản & mật khẩu
     if account and account.check_password(data['password']):
+        # Generate JWT token
+        secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
+        token = jwt.encode({
+            'user_id': account.id,
+            'role': account.role
+        }, secret_key, algorithm="HS256")
+        
         return jsonify({
+            "token": token,
             "role": account.role,
             "username": account.username,
             "isActive": account.is_active,
-            "student_id": account.student_id,  # Thêm student_id
-            "teacher_id": account.teacher_id   # Thêm teacher_id
+            "student_id": account.student_id,
+            "teacher_id": account.teacher_id
         }), 200
     else:
-        return jsonify(), 401
+        return jsonify({"message": "Mật khẩu không chính xác"}), 401
 
 @account_bp.route('/accounts', methods=['GET'])
+@admin_required
 def get_accounts():
     accounts = Account.query.all()
     return jsonify([{
@@ -64,6 +109,7 @@ def get_accounts():
     } for account in accounts])
 
 @account_bp.route('/accounts/<int:id>', methods=['GET'])
+@admin_required
 def get_account(id):
     account = Account.query.get_or_404(id)
     return jsonify({
@@ -80,6 +126,7 @@ def get_account(id):
     })
 
 @account_bp.route('/accounts/<int:id>', methods=['PUT'])
+@admin_required
 def update_account(id):
     data = request.get_json()
     account = Account.query.get_or_404(id)
@@ -105,6 +152,7 @@ def update_account(id):
     return jsonify({"message": "Account updated successfully"})
 
 @account_bp.route('/accounts/<int:id>', methods=['DELETE'])
+@admin_required
 def delete_account(id):
     account = Account.query.get_or_404(id)
     db.session.delete(account)
