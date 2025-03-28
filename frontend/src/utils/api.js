@@ -25,18 +25,8 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // If token is expired or invalid, redirect to login
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_role');
-      localStorage.removeItem('username');
-      localStorage.removeItem('student_id');
-      localStorage.removeItem('teacher_id');
-      
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
-    }
+    // Không tự động đăng xuất và chuyển hướng khi gặp lỗi 401
+    // Người dùng sẽ phải đăng xuất thủ công
     return Promise.reject(error);
   }
 );

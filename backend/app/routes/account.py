@@ -21,7 +21,7 @@ def admin_required(f):
             
             # Verify the token
             secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
-            data = jwt.decode(token, secret_key, algorithms=["HS256"])
+            data = jwt.decode(token, secret_key, algorithms=["HS256"], options={"verify_exp": False})
             
             # Check if user is admin
             if data.get('role') != 'admin':
@@ -32,6 +32,83 @@ def admin_required(f):
             g.role = data.get('role')
             
             return f(*args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            return jsonify({"message": "Token đã hết hạn"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"message": "Token không hợp lệ"}), 401
+        
+    return decorated_function
+
+# Middleware to authenticate any logged-in user
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"message": "Không tìm thấy token xác thực"}), 401
+        
+        try:
+            # Get the token (remove 'Bearer ' if present)
+            token = auth_header.split("Bearer ")[1] if "Bearer " in auth_header else auth_header
+            
+            # Verify the token
+            secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
+            data = jwt.decode(token, secret_key, algorithms=["HS256"], options={"verify_exp": False})
+                
+            # Store user info for the route handler
+            g.user_id = data.get('user_id')
+            g.role = data.get('role')
+            g.student_id = data.get('student_id')
+            g.teacher_id = data.get('teacher_id')
+            
+            return f(*args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            return jsonify({"message": "Token đã hết hạn"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"message": "Token không hợp lệ"}), 401
+        
+    return decorated_function
+
+# Middleware để xác thực quyền admin HOẶC người dùng tự cập nhật chính mình
+def role_or_self_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"message": "Không tìm thấy token xác thực"}), 401
+        
+        try:
+            # Get the token (remove 'Bearer ' if present)
+            token = auth_header.split("Bearer ")[1] if "Bearer " in auth_header else auth_header
+            
+            # Verify the token
+            secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
+            data = jwt.decode(token, secret_key, algorithms=["HS256"], options={"verify_exp": False})
+            
+            # Store user info for the route handler
+            g.user_id = data.get('user_id')
+            g.role = data.get('role')
+            g.student_id = data.get('student_id')
+            g.teacher_id = data.get('teacher_id')
+            
+            # Kiểm tra quyền admin hoặc chính bản thân người dùng
+            # Chỉ admin hoặc chính người đó mới có thể sửa thông tin của họ
+            resource_id = kwargs.get('id')
+            
+            # Cho phép admin thao tác mọi tài khoản
+            if g.role == 'admin':
+                return f(*args, **kwargs)
+                
+            # Lấy tài khoản từ ID resource
+            account = Account.query.get(g.user_id)
+            
+            # Kiểm tra xem người này có đang truy cập profile của chính mình không
+            if (account.role == 'student' and account.student_id == resource_id) or \
+               (account.role == 'teacher' and account.teacher_id == resource_id):
+                return f(*args, **kwargs)
+                
+            return jsonify({"message": "Bạn không có quyền thực hiện hành động này"}), 403
+            
         except jwt.ExpiredSignatureError:
             return jsonify({"message": "Token đã hết hạn"}), 401
         except jwt.InvalidTokenError:
@@ -75,10 +152,19 @@ def login_account():
     if account and account.check_password(data['password']):
         # Generate JWT token
         secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
-        token = jwt.encode({
+        token_data = {
             'user_id': account.id,
             'role': account.role
-        }, secret_key, algorithm="HS256")
+            # Không thêm thời gian hết hạn (exp) để token tồn tại cho đến khi đăng xuất
+        }
+        
+        # Thêm student_id/teacher_id vào token data nếu có
+        if account.student_id:
+            token_data['student_id'] = account.student_id
+        if account.teacher_id:
+            token_data['teacher_id'] = account.teacher_id
+            
+        token = jwt.encode(token_data, secret_key, algorithm="HS256")
         
         return jsonify({
             "token": token,

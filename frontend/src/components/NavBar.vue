@@ -194,6 +194,7 @@ const handleScroll = () => {
 };
 
 const logout = () => {
+  localStorage.removeItem("auth_token");
   localStorage.removeItem("username");
   localStorage.removeItem("user_role");
   localStorage.removeItem("student_id");

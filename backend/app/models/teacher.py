@@ -12,9 +12,7 @@ class Teacher(db.Model):
     address = db.Column(db.String(255), nullable=False)
     avatar_url = db.Column(db.String(255), default=None)
     bio = db.Column(db.Text, nullable=True)
-    specialization = db.Column(db.String(255), nullable=True)
-    achievements = db.Column(db.Text, nullable=True)
-    teaching_philosophy = db.Column(db.Text, nullable=True)
+    gender = db.Column(db.Enum('MALE', 'FEMALE', name='gender_enum'), nullable=False, default='MALE')
 
     def __repr__(self):
         return f'<Teacher {self.first_name} {self.last_name}>'

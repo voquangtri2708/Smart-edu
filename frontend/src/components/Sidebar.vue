@@ -38,6 +38,21 @@
             <i class="bi bi-chat-square-text me-2"></i>Đánh giá và khảo sát
           </router-link>
         </div>
+        
+        <!-- Thêm mới: Thông tin cá nhân -->
+        <div class="menu-item" @click="toggleMenu('profile')">
+          <div class="menu-item-content">
+            <i class="bi bi-person me-2"></i>
+            <span>Thông tin cá nhân</span>
+          </div>
+          <i :class="getIconClass('profile')"></i>
+        </div>
+        
+        <div v-if="menuOpen.profile" class="submenu">
+          <router-link to="/profile/student" class="submenu-item" active-class="active">
+            <i class="bi bi-person-vcard me-2"></i>Hồ sơ sinh viên
+          </router-link>
+        </div>
       </div>
 
       <!-- Nếu là Teacher -->
@@ -62,6 +77,21 @@
             <i class="bi bi-pencil-square me-2"></i>Nhập điểm sinh viên
           </router-link>
         </div>
+        
+        <!-- Thêm mới: Thông tin cá nhân -->
+        <div class="menu-item" @click="toggleMenu('profile')">
+          <div class="menu-item-content">
+            <i class="bi bi-person me-2"></i>
+            <span>Thông tin cá nhân</span>
+          </div>
+          <i :class="getIconClass('profile')"></i>
+        </div>
+        
+        <div v-if="menuOpen.profile" class="submenu">
+          <router-link to="/profile/teacher" class="submenu-item" active-class="active">
+            <i class="bi bi-person-vcard me-2"></i>Hồ sơ giảng viên
+          </router-link>
+        </div>
       </div>
 
       <!-- Nếu là Admin -->
@@ -81,6 +111,24 @@
         <div v-if="menuOpen.management" class="submenu">
           <router-link to="/admin-feedback-management" class="submenu-item" active-class="active">
             <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
+          </router-link>
+        </div>
+
+        <!-- Thêm mới: Quản lý người dùng -->
+        <div class="menu-item" @click="toggleMenu('users')">
+          <div class="menu-item-content">
+            <i class="bi bi-people me-2"></i>
+            <span>Quản lý người dùng</span>
+          </div>
+          <i :class="getIconClass('users')"></i>
+        </div>
+        
+        <div v-if="menuOpen.users" class="submenu">
+          <router-link to="/admin/students" class="submenu-item" active-class="active">
+            <i class="bi bi-mortarboard me-2"></i>Quản lý sinh viên
+          </router-link>
+          <router-link to="/admin/teachers" class="submenu-item" active-class="active">
+            <i class="bi bi-person-badge me-2"></i>Quản lý giảng viên
           </router-link>
         </div>
       </div>
@@ -103,6 +151,8 @@ const menuOpen = ref({
   survey: false,
   teaching: false,
   management: false,
+  users: false,
+  profile: false,
 });
 
 // Lấy role từ localStorage khi component được mount
@@ -138,6 +188,14 @@ const highlightActiveMenu = () => {
     menuOpen.value.survey = true;
   } else if (path.includes('admin-feedback-management')) {
     menuOpen.value.management = true;
+  } else if (path.includes('admin/students')) {
+    menuOpen.value.users = true;
+  } else if (path.includes('admin/teachers')) {
+    menuOpen.value.users = true;
+  } else if (path.includes('profile/student')) {
+    menuOpen.value.profile = true;
+  } else if (path.includes('profile/teacher')) {
+    menuOpen.value.profile = true;
   }
 };
 

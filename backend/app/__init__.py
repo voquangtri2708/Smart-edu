@@ -13,7 +13,9 @@ def create_app():
     logging.info(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
     db.init_app(app)
-    CORS(app)  # Enable CORS
+    
+    # Cấu hình CORS chi tiết
+    CORS(app, resources={r"/api/*": {"origins": "*", "supports_credentials": True}})
 
     # Import và đăng ký Blueprint sau khi tạo app
     from app.routes.account import account_bp
@@ -29,6 +31,7 @@ def create_app():
     from app.routes.teacher_feedback import teacher_feedback_bp
     from app.routes.classroom_feedback import classroom_feedback_bp
     from app.routes.feedback_availability import feedback_availability_bp
+    from app.routes.avatar import avatar_bp
 
     app.register_blueprint(account_bp, url_prefix="/api")
     app.register_blueprint(class_bp, url_prefix="/api")
@@ -43,5 +46,6 @@ def create_app():
     app.register_blueprint(teacher_feedback_bp, url_prefix="/api")
     app.register_blueprint(classroom_feedback_bp, url_prefix="/api")
     app.register_blueprint(feedback_availability_bp, url_prefix="/api")
+    app.register_blueprint(avatar_bp, url_prefix="/api")
 
     return app
