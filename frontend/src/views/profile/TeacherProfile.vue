@@ -55,11 +55,18 @@
               <div class="row mb-3">
                 <div class="col-md-6">
                   <label class="form-label">Email</label>
-                  <input type="email" class="form-control" v-model="editedTeacher.email" :disabled="!isEditing">
+                  <input type="email" class="form-control" v-model="editedTeacher.email" 
+                    :disabled="!isEditing"
+                    maxlength="255">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Số điện thoại</label>
-                  <input type="tel" class="form-control" v-model="editedTeacher.phone_number" :disabled="!isEditing">
+                  <input type="tel" class="form-control" v-model="editedTeacher.phone_number" 
+                    :disabled="!isEditing"
+                    maxlength="10" 
+                    pattern="[0-9]{10}" 
+                    title="Số điện thoại phải có đúng 10 chữ số">
+                  <div v-if="isEditing" class="form-text">Số điện thoại phải có đúng 10 chữ số</div>
                 </div>
               </div>
               

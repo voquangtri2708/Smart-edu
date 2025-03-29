@@ -66,11 +66,22 @@
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label">ID <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control" v-model="currentTeacher.id" :disabled="isEditing" required>
+                      <input type="text" class="form-control" v-model="currentTeacher.id" 
+                        :disabled="isEditing" 
+                        maxlength="11" 
+                        pattern="[A-Za-z0-9]{11}" 
+                        title="ID phải có đúng 11 ký tự" 
+                        required>
+                      <div class="form-text">ID phải có đúng 11 ký tự</div>
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">CMND/CCCD <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control" v-model="currentTeacher.identity_number" required>
+                      <input type="text" class="form-control" v-model="currentTeacher.identity_number" 
+                        maxlength="12" 
+                        pattern="[0-9]{12}" 
+                        title="CMND/CCCD phải có đúng 12 chữ số" 
+                        required>
+                      <div class="form-text">CMND/CCCD phải có đúng 12 chữ số</div>
                     </div>
                   </div>
                   
@@ -88,11 +99,15 @@
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label">Email</label>
-                      <input type="email" class="form-control" v-model="currentTeacher.email">
+                      <input type="email" class="form-control" v-model="currentTeacher.email" maxlength="255">
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">Số điện thoại</label>
-                      <input type="tel" class="form-control" v-model="currentTeacher.phone_number">
+                      <input type="tel" class="form-control" v-model="currentTeacher.phone_number" 
+                        maxlength="10" 
+                        pattern="[0-9]{10}" 
+                        title="Số điện thoại phải có đúng 10 chữ số">
+                      <div class="form-text">Số điện thoại phải có đúng 10 chữ số</div>
                     </div>
                   </div>
                   
