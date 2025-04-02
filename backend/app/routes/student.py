@@ -19,7 +19,9 @@ def create_student():
         first_name=data['first_name'],
         last_name=data['last_name'],
         birthday=datetime.strptime(data['birthday'], '%Y-%m-%d').date(),
-        address=data['address']
+        address=data['address'],
+        avatar_url=data.get('avatar_url'),
+        gender=data.get('gender', 'MALE')
     )
     db.session.add(new_student)
     db.session.commit()
@@ -29,14 +31,16 @@ def create_student():
 def get_students():
     students = Student.query.all()
     return jsonify([{
-        "id": student.id,
-        "identity_number": student.identity_number,
-        "email": student.email,
-        "phone_number": student.phone_number,
-        "first_name": student.first_name,
-        "last_name": student.last_name,
-        "birthday": format_date(student.birthday),
-        "address": student.address
+        'id': student.id,
+        'identity_number': student.identity_number,
+        'email': student.email,
+        'phone_number': student.phone_number,
+        'first_name': student.first_name,
+        'last_name': student.last_name,
+        'birthday': student.birthday.isoformat() if student.birthday else None,
+        'address': student.address,
+        'avatar_url': student.avatar_url,
+        'gender': student.gender
     } for student in students])
 
 @student_bp.route('/students/<string:id>', methods=['GET'])
@@ -50,7 +54,9 @@ def get_student(id):
         "first_name": student.first_name,
         "last_name": student.last_name,
         "birthday": format_date(student.birthday),
-        "address": student.address
+        "address": student.address,
+        "avatar_url": student.avatar_url,
+        "gender": student.gender
     })
 
 @student_bp.route('/students/<string:id>', methods=['PUT'])
@@ -72,6 +78,10 @@ def update_student(id):
         student.birthday = datetime.strptime(data['birthday'], '%Y-%m-%d').date()
     if 'address' in data:
         student.address = data['address']
+    if 'gender' in data:
+        student.gender = data['gender']
+    if 'avatar_url' in data:
+        student.avatar_url = data['avatar_url']
     
     db.session.commit()
     return jsonify({"message": "Student updated successfully"})

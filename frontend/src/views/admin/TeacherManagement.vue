@@ -75,13 +75,13 @@
                       <div class="form-text">ID phải có đúng 11 ký tự</div>
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label class="form-label">CMND/CCCD <span class="text-danger">*</span></label>
+                      <label class="form-label">CCCD <span class="text-danger">*</span></label>
                       <input type="text" class="form-control" v-model="currentTeacher.identity_number" 
                         maxlength="12" 
                         pattern="[0-9]{12}" 
-                        title="CMND/CCCD phải có đúng 12 chữ số" 
+                        title="CCCD phải có đúng 12 chữ số" 
                         required>
-                      <div class="form-text">CMND/CCCD phải có đúng 12 chữ số</div>
+                      <div class="form-text">CCCD phải có đúng 12 chữ số</div>
                     </div>
                   </div>
                   

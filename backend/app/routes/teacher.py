@@ -19,7 +19,9 @@ def create_teacher():
         first_name=data['first_name'],
         last_name=data['last_name'],
         birthday=datetime.strptime(data['birthday'], '%Y-%m-%d').date(),
-        address=data['address']
+        address=data['address'],
+        gender=data.get('gender'),
+        avatar_url=data.get('avatar_url')
     )
     db.session.add(new_teacher)
     db.session.commit()
@@ -36,7 +38,9 @@ def get_teachers():
         "first_name": teacher.first_name,
         "last_name": teacher.last_name,
         "birthday": format_date(teacher.birthday),
-        "address": teacher.address
+        "address": teacher.address,
+        "gender": teacher.gender,
+        "avatar_url": teacher.avatar_url
     } for teacher in teachers])
 
 @teacher_bp.route('/teachers/<string:id>', methods=['GET'])
@@ -50,7 +54,9 @@ def get_teacher(id):
         "first_name": teacher.first_name,
         "last_name": teacher.last_name,
         "birthday": format_date(teacher.birthday),
-        "address": teacher.address
+        "address": teacher.address,
+        "gender": teacher.gender,
+        "avatar_url": teacher.avatar_url
     })
 
 @teacher_bp.route('/teachers/<string:id>', methods=['PUT'])
@@ -72,6 +78,10 @@ def update_teacher(id):
         teacher.birthday = datetime.strptime(data['birthday'], '%Y-%m-%d').date()
     if 'address' in data:
         teacher.address = data['address']
+    if 'gender' in data:
+        teacher.gender = data['gender']
+    if 'avatar_url' in data:
+        teacher.avatar_url = data['avatar_url']
     
     db.session.commit()
     return jsonify({"message": "Teacher updated successfully"})
