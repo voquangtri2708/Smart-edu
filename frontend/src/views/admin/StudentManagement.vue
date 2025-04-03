@@ -74,7 +74,6 @@
                         pattern="[A-Za-z0-9]{11}" 
                         title="ID phải có đúng 11 ký tự" 
                         required>
-                      <div class="form-text">ID phải có đúng 11 ký tự</div>
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">CCCD <span class="text-danger">*</span></label>
@@ -83,7 +82,6 @@
                         pattern="[0-9]{12}" 
                         title="CCCD phải có đúng 12 chữ số" 
                         required>
-                      <div class="form-text">CCCD phải có đúng 12 chữ số</div>
                     </div>
                   </div>
                   
@@ -109,7 +107,6 @@
                         maxlength="10" 
                         pattern="[0-9]{10}" 
                         title="Số điện thoại phải có đúng 10 chữ số">
-                      <div class="form-text">Số điện thoại phải có đúng 10 chữ số</div>
                     </div>
                   </div>
                   

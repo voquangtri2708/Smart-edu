@@ -91,7 +91,7 @@
               
               <div class="mb-3">
                 <label class="form-label">Tiểu sử</label>
-                <textarea class="form-control" v-model="editedTeacher.bio" rows="3" disabled></textarea>
+                <textarea class="form-control" v-model="editedTeacher.bio" rows="3" :disabled="!isEditing"></textarea>
               </div>
               
               <div v-if="isEditing" class="d-grid gap-2">
@@ -172,6 +172,7 @@ const messageType = ref('success');
 const fileInput = ref(null);
 const uploadStatus = ref(null);
 const username = ref('');
+
 const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23EEEEEE'/%3E%3Ctext x='75' y='75' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23AAAAAA'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
 
 // Life cycle
@@ -218,7 +219,8 @@ const saveProfile = async () => {
     // Chỉ gửi các trường được phép cập nhật
     const updateData = {
       email: editedTeacher.email,
-      phone_number: editedTeacher.phone_number
+      phone_number: editedTeacher.phone_number,
+      bio: editedTeacher.bio  // Added bio field
     };
     
     await axios.put(`http://localhost:5000/api/teachers/${teacher.value.id}`, updateData, {
@@ -230,6 +232,7 @@ const saveProfile = async () => {
     // Update local data
     teacher.value.email = editedTeacher.email;
     teacher.value.phone_number = editedTeacher.phone_number;
+    teacher.value.bio = editedTeacher.bio;  // Update bio in local data
     
     // Exit edit mode
     isEditing.value = false;
@@ -247,67 +250,67 @@ const handleFileChange = async (event) => {
   // Kiểm tra kích thước file (dưới 2MB)
   if (file.size > 2 * 1024 * 1024) {
     uploadStatus.value = {
-      message: 'Ảnh phải có kích thước dưới 2MB',
+      message: 'File quá lớn. Vui lòng chọn file dưới 2MB',
       type: 'text-danger'
     };
     return;
   }
   
-  // Kiểm tra định dạng file
+  // Kiểm tra loại file
   if (!file.type.match('image.*')) {
     uploadStatus.value = {
-      message: 'Vui lòng chọn file ảnh hợp lệ',
+      message: 'Vui lòng chọn file hình ảnh',
       type: 'text-danger'
     };
     return;
   }
   
-  uploadStatus.value = {
-    message: 'Đang tải ảnh lên...',
-    type: 'text-info'
-  };
-  
   try {
-    // Chuyển file thành Base64
+    uploadStatus.value = {
+      message: 'Đang xử lý...',
+      type: 'text-info'
+    };
+    
     const reader = new FileReader();
     reader.readAsDataURL(file);
+    
     reader.onload = async () => {
       const base64Image = reader.result;
-      
-      // Gửi lên server
       const token = localStorage.getItem('auth_token');
+      
+      // Upload avatar
       const response = await axios.post('http://localhost:5000/api/upload-avatar', {
-        image: base64Image
+        image: base64Image,
+        teacher_id: teacher.value.id
       }, {
         headers: {
           'Authorization': token
         }
       });
       
-      // Cập nhật avatar_url
+      // Cập nhật URL mới
       teacher.value.avatar_url = response.data.avatar_url;
       
       uploadStatus.value = {
-        message: 'Tải ảnh lên thành công!',
+        message: 'Tải lên thành công!',
         type: 'text-success'
       };
       
-      // Xóa thông báo sau 3 giây
       setTimeout(() => {
         uploadStatus.value = null;
       }, 3000);
     };
   } catch (error) {
     uploadStatus.value = {
-      message: 'Không thể tải ảnh lên: ' + (error.response?.data?.message || error.message),
+      message: 'Lỗi: ' + (error.response?.data?.message || error.message),
       type: 'text-danger'
     };
   }
 };
 
 const openChangePasswordModal = () => {
-  // TODO: Implement password change functionality
-  showMessage('Chức năng đang được phát triển!', 'info');
+  // Implement password change functionality here
+  alert('Chức năng đổi mật khẩu sẽ được triển khai sau');
 };
 
 const showMessage = (text, type = 'success') => {
@@ -319,4 +322,4 @@ const showMessage = (text, type = 'success') => {
     message.value = '';
   }, 5000);
 };
-</script> 
+</script>
