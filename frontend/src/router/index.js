@@ -3,6 +3,8 @@ import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
 import StudentFeedback from '@/views/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/AdminFeedbackManagement.vue';
+import SubjectManagement from '../views/admin/SubjectManagement.vue';
+import SubjectList from '../views/subject/SubjectList.vue';
 
 // Lazy loading các trang quản lý 
 const AdminStudentManagement = () => import('@/views/admin/StudentManagement.vue');
@@ -27,6 +29,15 @@ const routes = [
     component: AdminTeacherManagement,
     meta: { requiresAdmin: true }
   },
+  { 
+    path: "/admin/subjects", 
+    name: "admin-subjects",
+    component: SubjectManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
   
   // Profile routes
   { 
@@ -49,10 +60,18 @@ const routes = [
       return '/';
     }
   },
+  
+  // General Subject List Route
+  { 
+    path: "/subjects", 
+    name: "subjects",
+    component: SubjectList,
+    meta: { requiresAuth: true }
+  },
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 

@@ -1,6 +1,7 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.student import Student
+from app.utils.auth import auth_required, admin_required, student_self_or_admin_required
 from datetime import datetime
 
 student_bp = Blueprint('student', __name__)
@@ -9,6 +10,7 @@ def format_date(date):
     return date.strftime('%Y-%m-%d') if date else None
 
 @student_bp.route('/students', methods=['POST'])
+@admin_required
 def create_student():
     data = request.get_json()
     new_student = Student(
@@ -28,6 +30,7 @@ def create_student():
     return jsonify({"message": "Student created successfully"}), 201
 
 @student_bp.route('/students', methods=['GET'])
+@auth_required
 def get_students():
     students = Student.query.all()
     return jsonify([{
@@ -44,6 +47,7 @@ def get_students():
     } for student in students])
 
 @student_bp.route('/students/<string:id>', methods=['GET'])
+@auth_required
 def get_student(id):
     student = Student.query.get_or_404(id)
     return jsonify({
@@ -60,6 +64,7 @@ def get_student(id):
     })
 
 @student_bp.route('/students/<string:id>', methods=['PUT'])
+@student_self_or_admin_required
 def update_student(id):
     data = request.get_json()
     student = Student.query.get_or_404(id)
@@ -87,6 +92,7 @@ def update_student(id):
     return jsonify({"message": "Student updated successfully"})
 
 @student_bp.route('/students/<string:id>', methods=['DELETE'])
+@admin_required
 def delete_student(id):
     student = Student.query.get_or_404(id)
     db.session.delete(student)
