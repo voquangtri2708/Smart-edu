@@ -1,4 +1,3 @@
-<!-- filepath: d:\Code\Smart-edu\frontend\src\components\Sidebar.vue -->
 <template>
   <div class="sidebar" :class="{ 'hidden': !isExpanded }">
     <div class="sidebar-inner">
@@ -17,6 +16,9 @@
         </div>
         
         <div v-if="menuOpen.study" class="submenu">
+          <router-link to="/subjects" class="submenu-item" active-class="active">
+            <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
+          </router-link>
           <router-link to="#" class="submenu-item">
             <i class="bi bi-calendar3 me-2"></i>Lịch học
           </router-link>
@@ -70,6 +72,9 @@
         </div>
         
         <div v-if="menuOpen.teaching" class="submenu">
+          <router-link to="/subjects" class="submenu-item" active-class="active">
+            <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
+          </router-link>
           <router-link to="#" class="submenu-item">
             <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
           </router-link>
@@ -99,21 +104,6 @@
         <div class="section-title">
           <i class="bi bi-gear me-2"></i>Quản lý hệ thống
         </div>
-        
-        <div class="menu-item" @click="toggleMenu('management')">
-          <div class="menu-item-content">
-            <i class="bi bi-bar-chart-line me-2"></i>
-            <span>Quản lý đánh giá</span>
-          </div>
-          <i :class="getIconClass('management')"></i>
-        </div>
-        
-        <div v-if="menuOpen.management" class="submenu">
-          <router-link to="/admin-feedback-management" class="submenu-item" active-class="active">
-            <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
-          </router-link>
-        </div>
-
         <!-- Thêm mới: Quản lý người dùng -->
         <div class="menu-item" @click="toggleMenu('users')">
           <div class="menu-item-content">
@@ -129,6 +119,34 @@
           </router-link>
           <router-link to="/admin/teachers" class="submenu-item" active-class="active">
             <i class="bi bi-person-badge me-2"></i>Quản lý giảng viên
+          </router-link>
+        </div>
+        <div class="menu-item" @click="toggleMenu('management')">
+          <div class="menu-item-content">
+            <i class="bi bi-bar-chart-line me-2"></i>
+            <span>Quản lý đánh giá</span>
+          </div>
+          <i :class="getIconClass('management')"></i>
+        </div>
+        
+        <div v-if="menuOpen.management" class="submenu">
+          <router-link to="/admin-feedback-management" class="submenu-item" active-class="active">
+            <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
+          </router-link>
+        </div>
+        
+        <!-- Quản lý chương trình học -->
+        <div class="menu-item" @click="toggleMenu('curriculum')">
+          <div class="menu-item-content">
+            <i class="bi bi-journal-text me-2"></i>
+            <span>Quản lý chương trình học</span>
+          </div>
+          <i :class="getIconClass('curriculum')"></i>
+        </div>
+        
+        <div v-if="menuOpen.curriculum" class="submenu">
+          <router-link to="/admin/subjects" class="submenu-item" active-class="active">
+            <i class="bi bi-journal-bookmark me-2"></i>Quản lý môn học
           </router-link>
         </div>
       </div>
@@ -153,6 +171,7 @@ const menuOpen = ref({
   management: false,
   users: false,
   profile: false,
+  curriculum: false,
 });
 
 // Lấy role từ localStorage khi component được mount
@@ -192,10 +211,15 @@ const highlightActiveMenu = () => {
     menuOpen.value.users = true;
   } else if (path.includes('admin/teachers')) {
     menuOpen.value.users = true;
+  } else if (path.includes('admin/subjects')) {
+    menuOpen.value.curriculum = true;
   } else if (path.includes('profile/student')) {
     menuOpen.value.profile = true;
   } else if (path.includes('profile/teacher')) {
     menuOpen.value.profile = true;
+  } else if (path.includes('/subjects')) {
+    menuOpen.value.study = true;
+    menuOpen.value.teaching = true;
   }
 };
 

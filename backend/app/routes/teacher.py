@@ -1,6 +1,7 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.teacher import Teacher
+from app.utils.auth import auth_required, admin_required, teacher_self_or_admin_required
 from datetime import datetime
 
 teacher_bp = Blueprint('teacher', __name__)
@@ -9,6 +10,7 @@ def format_date(date):
     return date.strftime('%Y-%m-%d') if date else None
 
 @teacher_bp.route('/teachers', methods=['POST'])
+@admin_required
 def create_teacher():
     data = request.get_json()
     new_teacher = Teacher(
@@ -19,13 +21,17 @@ def create_teacher():
         first_name=data['first_name'],
         last_name=data['last_name'],
         birthday=datetime.strptime(data['birthday'], '%Y-%m-%d').date(),
-        address=data['address']
+        address=data['address'],
+        gender=data.get('gender'),
+        avatar_url=data.get('avatar_url'),
+        bio=data.get('bio')
     )
     db.session.add(new_teacher)
     db.session.commit()
     return jsonify({"message": "Teacher created successfully"}), 201
 
 @teacher_bp.route('/teachers', methods=['GET'])
+@auth_required
 def get_teachers():
     teachers = Teacher.query.all()
     return jsonify([{
@@ -36,10 +42,14 @@ def get_teachers():
         "first_name": teacher.first_name,
         "last_name": teacher.last_name,
         "birthday": format_date(teacher.birthday),
-        "address": teacher.address
+        "address": teacher.address,
+        "gender": teacher.gender,
+        "avatar_url": teacher.avatar_url,
+        "bio": teacher.bio
     } for teacher in teachers])
 
 @teacher_bp.route('/teachers/<string:id>', methods=['GET'])
+@auth_required
 def get_teacher(id):
     teacher = Teacher.query.get_or_404(id)
     return jsonify({
@@ -50,10 +60,14 @@ def get_teacher(id):
         "first_name": teacher.first_name,
         "last_name": teacher.last_name,
         "birthday": format_date(teacher.birthday),
-        "address": teacher.address
+        "address": teacher.address,
+        "gender": teacher.gender,
+        "avatar_url": teacher.avatar_url,
+        "bio": teacher.bio
     })
 
 @teacher_bp.route('/teachers/<string:id>', methods=['PUT'])
+@teacher_self_or_admin_required
 def update_teacher(id):
     data = request.get_json()
     teacher = Teacher.query.get_or_404(id)
@@ -72,11 +86,18 @@ def update_teacher(id):
         teacher.birthday = datetime.strptime(data['birthday'], '%Y-%m-%d').date()
     if 'address' in data:
         teacher.address = data['address']
+    if 'gender' in data:
+        teacher.gender = data['gender']
+    if 'avatar_url' in data:
+        teacher.avatar_url = data['avatar_url']
+    if 'bio' in data:
+        teacher.bio = data['bio']
     
     db.session.commit()
     return jsonify({"message": "Teacher updated successfully"})
 
 @teacher_bp.route('/teachers/<string:id>', methods=['DELETE'])
+@admin_required
 def delete_teacher(id):
     teacher = Teacher.query.get_or_404(id)
     db.session.delete(teacher)

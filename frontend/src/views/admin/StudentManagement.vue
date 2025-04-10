@@ -74,16 +74,14 @@
                         pattern="[A-Za-z0-9]{11}" 
                         title="ID phải có đúng 11 ký tự" 
                         required>
-                      <div class="form-text">ID phải có đúng 11 ký tự</div>
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label class="form-label">CMND/CCCD <span class="text-danger">*</span></label>
+                      <label class="form-label">CCCD <span class="text-danger">*</span></label>
                       <input type="text" class="form-control" v-model="currentStudent.identity_number" 
                         maxlength="12" 
                         pattern="[0-9]{12}" 
-                        title="CMND/CCCD phải có đúng 12 chữ số" 
+                        title="CCCD phải có đúng 12 chữ số" 
                         required>
-                      <div class="form-text">CMND/CCCD phải có đúng 12 chữ số</div>
                     </div>
                   </div>
                   
@@ -109,7 +107,6 @@
                         maxlength="10" 
                         pattern="[0-9]{10}" 
                         title="Số điện thoại phải có đúng 10 chữ số">
-                      <div class="form-text">Số điện thoại phải có đúng 10 chữ số</div>
                     </div>
                   </div>
                   
@@ -244,6 +241,7 @@ const fetchStudents = async () => {
         'Authorization': token
       }
     });
+    console.log("Student data from API:", response.data);
     students.value = response.data;
   } catch (error) {
     showMessage('Không thể tải danh sách sinh viên', 'danger');
@@ -454,4 +452,4 @@ const showMessage = (text, type = 'success') => {
     message.value = '';
   }, 5000);
 };
-</script> 
+</script>

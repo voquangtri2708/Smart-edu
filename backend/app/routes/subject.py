@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.subject import Subject
+from app.utils.auth import auth_required, admin_required
 
 subject_bp = Blueprint('subject', __name__)
 
 @subject_bp.route('/subjects', methods=['POST'])
+@auth_required
+@admin_required
 def create_subject():
     data = request.get_json()
     new_subject = Subject(
@@ -18,6 +21,7 @@ def create_subject():
     return jsonify({"message": "Subject created successfully"}), 201
 
 @subject_bp.route('/subjects', methods=['GET'])
+@auth_required
 def get_subjects():
     subjects = Subject.query.all()
     return jsonify([{
@@ -29,6 +33,7 @@ def get_subjects():
     } for subject in subjects])
 
 @subject_bp.route('/subjects/<int:id>', methods=['GET'])
+@auth_required
 def get_subject(id):
     subject = Subject.query.get_or_404(id)
     return jsonify({
@@ -40,6 +45,8 @@ def get_subject(id):
     })
 
 @subject_bp.route('/subjects/<int:id>', methods=['PUT'])
+@auth_required
+@admin_required
 def update_subject(id):
     data = request.get_json()
     subject = Subject.query.get_or_404(id)
@@ -57,6 +64,8 @@ def update_subject(id):
     return jsonify({"message": "Subject updated successfully"})
 
 @subject_bp.route('/subjects/<int:id>', methods=['DELETE'])
+@auth_required
+@admin_required
 def delete_subject(id):
     subject = Subject.query.get_or_404(id)
     db.session.delete(subject)

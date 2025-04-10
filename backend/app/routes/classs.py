@@ -1,6 +1,7 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.classs import Class
+from app.utils.auth import auth_required, admin_required
 from datetime import datetime
 
 class_bp = Blueprint('class', __name__)
@@ -9,6 +10,8 @@ def format_date(date):
     return date.strftime('%Y-%m-%d') if date else None
 
 @class_bp.route('/classes', methods=['POST'])
+@auth_required
+@admin_required
 def create_class():
     data = request.get_json()
     new_class = Class(
@@ -16,15 +19,14 @@ def create_class():
         max_student=data['max_student'],
         start_date=datetime.strptime(data['start_date'], '%Y-%m-%d').date(),
         end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date(),
-        subject_id=data['subject_id'],
-        subject_code=data['subject_code'],
-        status=data.get('status', 'pending')
+        subject_id=data.get('subject_id')  # Changed to get with default None since it's nullable
     )
     db.session.add(new_class)
     db.session.commit()
     return jsonify({"message": "Class created successfully"}), 201
 
 @class_bp.route('/classes', methods=['GET'])
+@auth_required
 def get_classes():
     classes = Class.query.all()
     return jsonify([{
@@ -33,12 +35,11 @@ def get_classes():
         "max_student": class_.max_student,
         "start_date": format_date(class_.start_date),
         "end_date": format_date(class_.end_date),
-        "subject_id": class_.subject_id,
-        "subject_code": class_.subject_code,
-        "status": class_.status
+        "subject_id": class_.subject_id
     } for class_ in classes])
 
 @class_bp.route('/classes/<int:id>', methods=['GET'])
+@auth_required
 def get_class(id):
     class_ = Class.query.get_or_404(id)
     return jsonify({
@@ -47,12 +48,12 @@ def get_class(id):
         "max_student": class_.max_student,
         "start_date": format_date(class_.start_date),
         "end_date": format_date(class_.end_date),
-        "subject_id": class_.subject_id,
-        "subject_code": class_.subject_code,
-        "status": class_.status
+        "subject_id": class_.subject_id
     })
 
 @class_bp.route('/classes/<int:id>', methods=['PUT'])
+@auth_required
+@admin_required
 def update_class(id):
     data = request.get_json()
     class_ = Class.query.get_or_404(id)
@@ -67,15 +68,13 @@ def update_class(id):
         class_.end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
     if 'subject_id' in data:
         class_.subject_id = data['subject_id']
-    if 'subject_code' in data:
-        class_.subject_code = data['subject_code']
-    if 'status' in data:
-        class_.status = data['status']
     
     db.session.commit()
     return jsonify({"message": "Class updated successfully"})
 
 @class_bp.route('/classes/<int:id>', methods=['DELETE'])
+@auth_required
+@admin_required
 def delete_class(id):
     class_ = Class.query.get_or_404(id)
     db.session.delete(class_)

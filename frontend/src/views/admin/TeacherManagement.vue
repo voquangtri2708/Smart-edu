@@ -72,16 +72,14 @@
                         pattern="[A-Za-z0-9]{11}" 
                         title="ID phải có đúng 11 ký tự" 
                         required>
-                      <div class="form-text">ID phải có đúng 11 ký tự</div>
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label class="form-label">CMND/CCCD <span class="text-danger">*</span></label>
+                      <label class="form-label">CCCD <span class="text-danger">*</span></label>
                       <input type="text" class="form-control" v-model="currentTeacher.identity_number" 
                         maxlength="12" 
                         pattern="[0-9]{12}" 
-                        title="CMND/CCCD phải có đúng 12 chữ số" 
+                        title="CCCD phải có đúng 12 chữ số" 
                         required>
-                      <div class="form-text">CMND/CCCD phải có đúng 12 chữ số</div>
                     </div>
                   </div>
                   
@@ -106,8 +104,7 @@
                       <input type="tel" class="form-control" v-model="currentTeacher.phone_number" 
                         maxlength="10" 
                         pattern="[0-9]{10}" 
-                        title="Số điện thoại phải có đúng 10 chữ số">
-                      <div class="form-text">Số điện thoại phải có đúng 10 chữ số</div>
+                        title="Số điện thoại phải có đúng 10 chữ số">                  
                     </div>
                   </div>
                   
@@ -385,11 +382,12 @@ const saveTeacher = async () => {
       
       // Xử lý avatar nếu có
       let avatarUrl = null;
+      let avatarData = null;  // Declare outside the if block
       if (teacherData.avatar_data) {
         delete teacherData.avatar_url; // Xóa URL tạm thời
         
         // Lưu lại dữ liệu avatar để dùng sau
-        const avatarData = teacherData.avatar_data;
+        avatarData = teacherData.avatar_data;  // Assign to the variable
         delete teacherData.avatar_data; // Xóa dữ liệu ảnh tạm thời
       }
       
@@ -407,6 +405,7 @@ const saveTeacher = async () => {
           phone_number: currentTeacher.value.phone_number,
           role: 'teacher',
           teacher_id: currentTeacher.value.id,
+          bio: currentTeacher.value.bio,
           is_active: true
         }, {
           headers: { 'Authorization': token }
@@ -462,4 +461,4 @@ const showMessage = (text, type = 'success') => {
     message.value = '';
   }, 5000);
 };
-</script> 
+</script>
