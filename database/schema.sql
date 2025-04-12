@@ -237,3 +237,30 @@ ALTER TABLE
 ALTER TABLE grade
     ADD COLUMN exam_id INT AFTER class_id,
     ADD CONSTRAINT fk_grade_exam FOREIGN KEY (exam_id) REFERENCES exam (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Add face_encoding column to student table
+ALTER TABLE student
+    ADD COLUMN face_encoding TEXT DEFAULT NULL;
+
+-- Add face_encoding column to teacher table
+ALTER TABLE teacher
+    ADD COLUMN face_encoding TEXT DEFAULT NULL;
+
+CREATE TABLE attendance (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id CHAR(11) NOT NULL,
+    class_id INT NOT NULL,
+    schedule_id INT NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    status ENUM('PRESENT', 'ABSENT', 'EXCUSED') NOT NULL,
+    recorded_by CHAR(11),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_attendance_student FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_attendance_class FOREIGN KEY (class_id) REFERENCES class(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_attendance_schedule FOREIGN KEY (schedule_id) REFERENCES schedule(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_attendance_teacher FOREIGN KEY (recorded_by) REFERENCES teacher(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
