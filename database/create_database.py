@@ -1,6 +1,8 @@
 import mysql.connector
 import os
 from dotenv import load_dotenv
+import logging  # Thư viện để ghi log
+from mysql.connector import Error  # Thư viện để xử lý lỗi MySQL
 
 # Load biến môi trường từ file .env
 load_dotenv()

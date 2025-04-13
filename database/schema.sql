@@ -1,7 +1,7 @@
 -- Tạo cơ sở dữ liệu
-CREATE DATABASE IF NOT EXISTS smartedu;
+CREATE DATABASE IF NOT EXISTS smartedu1;
 
-USE smartedu;
+USE smartedu1;
 
 -- 1. Bảng student
 CREATE TABLE student
