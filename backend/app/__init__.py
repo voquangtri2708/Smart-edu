@@ -32,6 +32,7 @@ def create_app():
     from app.routes.classroom_feedback import classroom_feedback_bp
     from app.routes.feedback_availability import feedback_availability_bp
     from app.routes.avatar import avatar_bp
+    from app.routes.grade_type import grade_type_bp
 
     app.register_blueprint(account_bp, url_prefix="/api")
     app.register_blueprint(class_bp, url_prefix="/api")
@@ -47,5 +48,6 @@ def create_app():
     app.register_blueprint(classroom_feedback_bp, url_prefix="/api")
     app.register_blueprint(feedback_availability_bp, url_prefix="/api")
     app.register_blueprint(avatar_bp, url_prefix="/api")
+    app.register_blueprint(grade_type_bp, url_prefix='/api')
 
     return app
