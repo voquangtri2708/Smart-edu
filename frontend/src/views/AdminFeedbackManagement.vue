@@ -19,8 +19,8 @@
                 <label class="form-label">Loại đánh giá</label>
                 <select class="form-select" v-model="filters.feedbackType" @change="fetchFeedbacks">
                   <option value="all">Tất cả</option>
-                  <option value="teacher">Đánh giá giảng viên</option>
-                  <option value="classroom">Đánh giá phòng học</option>
+                  <option value="TEACHER">Đánh giá giảng viên</option>
+                  <option value="CLASSROOM">Đánh giá phòng học</option>
                 </select>
               </div>
               
@@ -29,9 +29,9 @@
                 <label class="form-label">Sentiment</label>
                 <select class="form-select" v-model="filters.sentiment" @change="fetchFeedbacks">
                   <option value="">Tất cả</option>
-                  <option value="positive">Tích cực</option>
-                  <option value="neutral">Trung lập</option>
-                  <option value="negative">Tiêu cực</option>
+                  <option value="POSITIVE">Tích cực</option>
+                  <option value="NEUTRAL">Trung lập</option>
+                  <option value="NEGATIVE">Tiêu cực</option>
                 </select>
               </div>
               
@@ -71,7 +71,7 @@
                   class="nav-link" 
                   :class="{ active: activeTab === 'all' }" 
                   href="#"
-                  @click.prevent="activeTab = 'all'; fetchFeedbacks();"
+                  @click.prevent="activeTab = 'all'; filters.sentiment = ''; fetchFeedbacks();"
                 >
                   <i class="bi bi-list me-1"></i> Tất cả
                 </a>
@@ -79,9 +79,9 @@
               <li class="nav-item">
                 <a 
                   class="nav-link" 
-                  :class="{ active: activeTab === 'positive' }" 
+                  :class="{ active: activeTab === 'POSITIVE' }" 
                   href="#"
-                  @click.prevent="activeTab = 'positive'; filters.sentiment = 'positive'; fetchFeedbacks();"
+                  @click.prevent="activeTab = 'POSITIVE'; filters.sentiment = 'POSITIVE'; fetchFeedbacks();"
                 >
                   <i class="bi bi-emoji-smile me-1"></i> Tích cực
                   <span class="badge bg-success ms-1">{{ positiveCount }}</span>
@@ -90,9 +90,9 @@
               <li class="nav-item">
                 <a 
                   class="nav-link" 
-                  :class="{ active: activeTab === 'neutral' }" 
+                  :class="{ active: activeTab === 'NEUTRAL' }" 
                   href="#"
-                  @click.prevent="activeTab = 'neutral'; filters.sentiment = 'neutral'; fetchFeedbacks();"
+                  @click.prevent="activeTab = 'NEUTRAL'; filters.sentiment = 'NEUTRAL'; fetchFeedbacks();"
                 >
                   <i class="bi bi-emoji-neutral me-1"></i> Trung lập
                   <span class="badge bg-secondary ms-1">{{ neutralCount }}</span>
@@ -101,9 +101,9 @@
               <li class="nav-item">
                 <a 
                   class="nav-link" 
-                  :class="{ active: activeTab === 'negative' }" 
+                  :class="{ active: activeTab === 'NEGATIVE' }" 
                   href="#"
-                  @click.prevent="activeTab = 'negative'; filters.sentiment = 'negative'; fetchFeedbacks();"
+                  @click.prevent="activeTab = 'NEGATIVE'; filters.sentiment = 'NEGATIVE'; fetchFeedbacks();"
                 >
                   <i class="bi bi-emoji-frown me-1"></i> Tiêu cực
                   <span class="badge bg-danger ms-1">{{ negativeCount }}</span>
@@ -126,9 +126,9 @@
                     <div 
                       class="card h-100 border-0 shadow-sm hover-card" 
                       :class="{
-                        'border-start border-5 border-success': feedback.sentiment === 'positive',
-                        'border-start border-5 border-secondary': feedback.sentiment === 'neutral',
-                        'border-start border-5 border-danger': feedback.sentiment === 'negative'
+                        'border-start border-5 border-success': feedback.sentiment === 'POSITIVE',
+                        'border-start border-5 border-secondary': feedback.sentiment === 'NEUTRAL',
+                        'border-start border-5 border-danger': feedback.sentiment === 'NEGATIVE'
                       }"
                     >
                       <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -136,20 +136,20 @@
                           <i 
                             class="bi me-2" 
                             :class="{
-                              'bi-person-video3 text-primary': feedback.teacher_id,
-                              'bi-building text-success': feedback.classroom_id
+                              'bi-person-video3 text-primary': feedback.feedback_type === 'TEACHER',
+                              'bi-building text-success': feedback.feedback_type === 'CLASSROOM'
                             }"
                           ></i>
                           <h6 class="mb-0">
-                            {{ feedback.teacher_id ? 'Đánh giá giảng viên' : 'Đánh giá phòng học' }}
+                            {{ feedback.feedback_type === 'TEACHER' ? 'Đánh giá giảng viên' : 'Đánh giá phòng học' }}
                           </h6>
                         </div>
                         <span 
                           class="badge" 
                           :class="{
-                            'bg-success': feedback.sentiment === 'positive',
-                            'bg-secondary': feedback.sentiment === 'neutral',
-                            'bg-danger': feedback.sentiment === 'negative'
+                            'bg-success': feedback.sentiment === 'POSITIVE',
+                            'bg-secondary': feedback.sentiment === 'NEUTRAL',
+                            'bg-danger': feedback.sentiment === 'NEGATIVE'
                           }"
                         >
                           {{ formatSentiment(feedback.sentiment) }}
@@ -245,7 +245,7 @@
             <p>Bạn có chắc chắn muốn xóa đánh giá này không?</p>
             <p class="mb-1">
               <strong>Loại đánh giá:</strong> 
-              {{ selectedFeedback && selectedFeedback.teacher_id ? 'Đánh giá giảng viên' : 'Đánh giá phòng học' }}
+              {{ selectedFeedback && selectedFeedback.feedback_type === 'TEACHER' ? 'Đánh giá giảng viên' : 'Đánh giá phòng học' }}
             </p>
             <p class="mb-1">
               <strong>Mã sinh viên:</strong> {{ selectedFeedback?.student_id }}
@@ -305,8 +305,8 @@ const allFeedbacksData = ref([]);
 
 // Biến lưu trữ bộ lọc
 const filters = ref({
-  feedbackType: 'all', // 'all', 'teacher', 'classroom'
-  sentiment: '',       // 'positive', 'neutral', 'negative'
+  feedbackType: 'all', // 'all', 'TEACHER', 'CLASSROOM'
+  sentiment: '',       // 'POSITIVE', 'NEUTRAL', 'NEGATIVE'
   timeFrame: 'all',    // 'all', 'lastDay', 'lastWeek', 'lastMonth'
   searchTerm: ''
 });
@@ -329,33 +329,30 @@ const statisticsText = computed(() => {
 
 // Hàm tính toán số lượng từng loại sentiment từ dữ liệu đầy đủ
 const calculateSentimentCounts = (data) => {
-  positiveCount.value = data.filter(f => f.sentiment === 'positive').length;
-  neutralCount.value = data.filter(f => f.sentiment === 'neutral').length;
-  negativeCount.value = data.filter(f => f.sentiment === 'negative').length;
+  positiveCount.value = data.filter(f => f.sentiment === 'POSITIVE').length;
+  neutralCount.value = data.filter(f => f.sentiment === 'NEUTRAL').length;
+  negativeCount.value = data.filter(f => f.sentiment === 'NEGATIVE').length;
 };
 
 // Hàm tải toàn bộ dữ liệu để tính toán số lượng sentiment
 const fetchAllFeedbacks = async () => {
   try {
-    let teacherFeedbacks = [];
-    let classroomFeedbacks = [];
+    // Lấy token xác thực
+    const token = localStorage.getItem('auth_token');
     
-    // Lấy toàn bộ dữ liệu đánh giá giảng viên
-    const teacherResponse = await axios.get('http://localhost:5000/api/teacher_feedbacks');
-    teacherFeedbacks = teacherResponse.data;
-    
-    // Lấy toàn bộ dữ liệu đánh giá phòng học
-    const classroomResponse = await axios.get('http://localhost:5000/api/classroom_feedbacks');
-    classroomFeedbacks = classroomResponse.data;
-    
-    // Kết hợp tất cả dữ liệu
-    allFeedbacksData.value = [...teacherFeedbacks, ...classroomFeedbacks];
+    // Lấy toàn bộ dữ liệu đánh giá từ API mới
+    const response = await axios.get('http://localhost:5000/api/feedbacks', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    allFeedbacksData.value = response.data;
     
     // Tính toán số lượng sentiment từ tất cả dữ liệu
     calculateSentimentCounts(allFeedbacksData.value);
-    
   } catch (error) {
     console.error('Lỗi khi tải toàn bộ dữ liệu đánh giá:', error);
+    showToast('Không thể tải dữ liệu đánh giá', 'danger');
   }
 };
 
@@ -364,34 +361,29 @@ const fetchFeedbacks = async () => {
   loading.value = true;
 
   try {
-    let teacherFeedbacks = [];
-    let classroomFeedbacks = [];
-
-    // Lấy dữ liệu theo loại đánh giá
-    if (filters.value.feedbackType === 'all' || filters.value.feedbackType === 'teacher') {
-      const teacherResponse = await axios.get('http://localhost:5000/api/teacher_feedbacks', {
-        params: {
-          sentiment: filters.value.sentiment,
-          page: currentPage.value,
-          pageSize: pageSize.value
-        }
-      });
-      teacherFeedbacks = teacherResponse.data;
+    // Lấy token xác thực
+    const token = localStorage.getItem('auth_token');
+    
+    // Tạo object cho parameters
+    const params = {};
+    
+    // Thêm các tham số lọc vào params
+    if (filters.value.feedbackType !== 'all') {
+      params.feedback_type = filters.value.feedbackType;
     }
-
-    if (filters.value.feedbackType === 'all' || filters.value.feedbackType === 'classroom') {
-      const classroomResponse = await axios.get('http://localhost:5000/api/classroom_feedbacks', {
-        params: {
-          sentiment: filters.value.sentiment,
-          page: currentPage.value,
-          pageSize: pageSize.value
-        }
-      });
-      classroomFeedbacks = classroomResponse.data;
+    
+    if (filters.value.sentiment) {
+      params.sentiment = filters.value.sentiment;
     }
-
-    // Kết hợp dữ liệu
-    let allFeedbacks = [...teacherFeedbacks, ...classroomFeedbacks];
+    
+    // Lấy dữ liệu từ API mới
+    const response = await axios.get('http://localhost:5000/api/feedbacks', { 
+      params,
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    let allFeedbacks = response.data;
 
     // Lọc theo thời gian nếu cần
     if (filters.value.timeFrame !== 'all') {
@@ -425,8 +417,6 @@ const fetchFeedbacks = async () => {
       );
     }
 
-    // Đã chuyển logic tính toán sentiment counts sang hàm fetchAllFeedbacks
-
     // Sắp xếp từ mới đến cũ
     allFeedbacks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -451,14 +441,18 @@ const fetchFeedbacks = async () => {
 const deleteFeedback = async () => {
   if (!selectedFeedback.value) return;
   
-  const isTeacherFeedback = !!selectedFeedback.value.teacher_id;
-  const endpoint = isTeacherFeedback 
-    ? `http://localhost:5000/api/teacher_feedbacks/${selectedFeedback.value.id}`
-    : `http://localhost:5000/api/classroom_feedbacks/${selectedFeedback.value.id}`;
-  
   try {
-    await axios.delete(endpoint);
+    // Lấy token xác thực
+    const token = localStorage.getItem('auth_token');
+    
+    // Sử dụng API mới để xóa feedback
+    await axios.delete(`http://localhost:5000/api/feedbacks/${selectedFeedback.value.id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     await fetchFeedbacks();
+    await fetchAllFeedbacks(); // Cập nhật lại số lượng sau khi xóa
     showToast('Đã xóa đánh giá thành công', 'success');
     deleteModal.value.hide();
   } catch (error) {
@@ -517,9 +511,9 @@ const showToast = (message, type = 'info') => {
 // Hàm định dạng sentiment
 const formatSentiment = (sentiment) => {
   switch (sentiment) {
-    case 'positive': return 'Tích cực';
-    case 'neutral': return 'Trung lập';
-    case 'negative': return 'Tiêu cực';
+    case 'POSITIVE': return 'Tích cực';
+    case 'NEUTRAL': return 'Trung lập';
+    case 'NEGATIVE': return 'Tiêu cực';
     default: return sentiment;
   }
 };

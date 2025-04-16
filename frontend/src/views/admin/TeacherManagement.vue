@@ -1,58 +1,114 @@
 <template>
-  <div class="container mt-4">
-    <h2 class="mb-4">Quản lý giảng viên</h2>
-    
-    <!-- Hiển thị thông báo -->
-    <div v-if="message" :class="'alert alert-' + messageType" role="alert">
-      {{ message }}
-    </div>
-    
-    <!-- Nút thêm mới -->
-    <div class="mb-3">
-      <button class="btn btn-primary" @click="openAddModal">
-        <i class="bi bi-plus-circle me-2"></i>Thêm giảng viên mới
-      </button>
-    </div>
-    
-    <!-- Bảng hiển thị danh sách giảng viên -->
-    <div class="table-responsive">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>CMND/CCCD</th>
-            <th>Tên</th>
-            <th>Họ</th>
-            <th>Email</th>
-            <th>Số điện thoại</th>
-            <th>Giới tính</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="teacher in teachers" :key="teacher.id">
-            <td>{{ teacher.id }}</td>
-            <td>{{ teacher.identity_number }}</td>
-            <td>{{ teacher.first_name }}</td>
-            <td>{{ teacher.last_name }}</td>
-            <td>{{ teacher.email }}</td>
-            <td>{{ teacher.phone_number }}</td>
-            <td>{{ teacher.gender == 'MALE' ? 'Nam' : 'Nữ' }}</td>
-            <td>
-              <button class="btn btn-sm btn-info me-2" @click="openEditModal(teacher)">
-                <i class="bi bi-pencil-square"></i>
+  <div class="teacher-management">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Quản Lý Giảng Viên</h4>
+        <button @click="openAddModal" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i>Thêm Giảng Viên Mới
+        </button>
+      </div>
+      
+      <div class="card-body">
+        <!-- Hiển thị thông báo -->
+        <div v-if="message" :class="'alert alert-' + messageType" role="alert">
+          {{ message }}
+        </div>
+        
+        <!-- Search and filter -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-search"></i>
+              </span>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Tìm kiếm theo mã hoặc tên giảng viên..." 
+                v-model="searchQuery"
+                @input="handleSearchInput"
+              >
+              <button class="btn btn-outline-secondary" type="button" @click="fetchTeachers">
+                <i class="bi bi-search"></i>
               </button>
-              <button class="btn btn-sm btn-danger" @click="openDeleteModal(teacher)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <select class="form-select" v-model="sortBy" @change="sortTeachers">
+              <option value="id">Sắp xếp theo mã</option>
+              <option value="last_name">Sắp xếp theo họ</option>
+              <option value="first_name">Sắp xếp theo tên</option>
+            </select>
+          </div>
+          
+          <div class="col-md-3">
+            <select class="form-select" v-model="sortOrder" @change="sortTeachers">
+              <option value="asc">Tăng dần</option>
+              <option value="desc">Giảm dần</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Loading spinner -->
+        <div v-if="loading" class="text-center my-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Đang tải dữ liệu...</p>
+        </div>
+        
+        <!-- Teachers table -->
+        <div v-else-if="teachers.length" class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">ID</th>
+                <th scope="col">CMND/CCCD</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Email</th>
+                <th scope="col">Số điện thoại</th>
+                <th scope="col">Giới tính</th>
+                <th scope="col">Ngày sinh</th>
+                <th scope="col">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(teacher, index) in teachers" :key="teacher.id">
+                <td>{{ index + 1 }}</td>
+                <td>{{ teacher.id }}</td>
+                <td>{{ teacher.identity_number }}</td>
+                <td>{{ teacher.last_name }} {{ teacher.first_name }}</td>
+                <td>{{ teacher.email }}</td>
+                <td>{{ teacher.phone_number }}</td>
+                <td>{{ teacher.gender == 'MALE' ? 'Nam' : 'Nữ' }}</td>
+                <td>{{ new Date(teacher.birthday).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'}) }}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button @click="openEditModal(teacher)" class="btn btn-outline-primary">
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button @click="openDeleteModal(teacher)" class="btn btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- No teachers found -->
+        <div v-else class="text-center my-5">
+          <i class="bi bi-emoji-frown fs-1 text-muted"></i>
+          <p class="mt-2">Không tìm thấy giảng viên nào.</p>
+        </div>
+      </div>
     </div>
     
     <!-- Modal thêm/sửa giảng viên -->
-    <div class="modal fade" id="teacherModal" tabindex="-1" aria-hidden="true" ref="teacherModal">
+    <div class="modal fade" id="teacherModal" tabindex="-1" data-bs-backdrop="static" ref="teacherModal">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -118,7 +174,29 @@
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">Ngày sinh <span class="text-danger">*</span></label>
-                      <input type="date" class="form-control" v-model="currentTeacher.birthday" required>
+                      <VueFlatpickr
+                        v-model="currentTeacher.birthday"
+                        class="form-control"
+                        placeholder="DD/MM/YYYY"
+                        :config="{
+                          dateFormat: 'Y-m-d',
+                          locale: Vietnamese,
+                          allowInput: true,
+                          altFormat: 'd/m/Y',
+                          altInput: true,
+                          parseDate: (datestr, format) => {
+                            // Xử lý khi người dùng nhập 8 số liên tiếp
+                            if (/^\d{8}$/.test(datestr)) {
+                              const day = datestr.substring(0, 2);
+                              const month = datestr.substring(2, 4);
+                              const year = datestr.substring(4, 8);
+                              return new Date(`${year}-${month}-${day}`);
+                            }
+                            return flatpickr.parseDate(datestr, format);
+                          }
+                        }"
+                        required
+                      />
                     </div>
                   </div>
                   
@@ -130,6 +208,23 @@
                   <div class="mb-3">
                     <label class="form-label">Tiểu sử</label>
                     <textarea class="form-control" v-model="currentTeacher.bio" rows="3"></textarea>
+                  </div>
+                  
+                  <!-- Tài khoản (chỉ hiển thị khi thêm mới) -->
+                  <div v-if="!isEditing">
+                    <hr>
+                    <h5>Tạo tài khoản</h5>
+                    
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" v-model="accountData.username" required>
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" v-model="accountData.password" required>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
@@ -149,26 +244,12 @@
                 </div>
               </div>
               
-              <!-- Tài khoản (chỉ hiển thị khi thêm mới) -->
-              <div v-if="!isEditing">
-                <hr>
-                <h5>Tạo tài khoản</h5>
-                
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" v-model="accountData.username" required>
-                  </div>
-                  <div class="col-md-6 mb-3">
-                    <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
-                    <input type="password" class="form-control" v-model="accountData.password" required>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="submit" class="btn btn-primary">Lưu</button>
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-primary" :disabled="processing">
+                  <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  {{ isEditing ? 'Cập nhật' : 'Thêm mới' }}
+                </button>
               </div>
             </form>
           </div>
@@ -177,7 +258,7 @@
     </div>
     
     <!-- Modal xóa giảng viên -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true" ref="deleteModal">
+    <div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static" ref="deleteModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -185,12 +266,29 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            Bạn có chắc chắn muốn xóa giảng viên <strong>{{ deleteTeacherName }}</strong>?
+            <p>Bạn có chắc chắn muốn xóa giảng viên <strong>{{ deleteTeacherName }}</strong> không?</p>
+            <p class="text-danger"><small>Hành động này không thể hoàn tác.</small></p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-danger" @click="deleteTeacher">Xóa</button>
+            <button type="button" class="btn btn-danger" @click="deleteTeacher" :disabled="processing">
+              <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              Xóa
+            </button>
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" ref="toastNotification">
+        <div class="toast-header" :class="{'bg-success text-white': messageType === 'success', 'bg-danger text-white': messageType === 'danger'}">
+          <strong class="me-auto">Thông báo</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          {{ message }}
         </div>
       </div>
     </div>
@@ -200,10 +298,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { Modal } from 'bootstrap';
+import { Modal, Toast } from 'bootstrap';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import { Vietnamese } from 'flatpickr/dist/l10n/vn.js';
+import VueFlatpickr from 'vue-flatpickr-component';
 
 // State
 const teachers = ref([]);
+const searchQuery = ref('');
+const loading = ref(true);
+const processing = ref(false);
 const currentTeacher = ref({
   id: '',
   identity_number: '',
@@ -230,10 +335,22 @@ const deleteTeacherName = ref('');
 const uploadStatus = ref(null);
 const avatarInput = ref(null);
 const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23EEEEEE'/%3E%3Ctext x='75' y='75' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23AAAAAA'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
+const sortBy = ref('id');
+const sortOrder = ref('asc');
+const toastNotification = ref(null);
 
 // Life cycle
 onMounted(async () => {
+  loading.value = true;
   await fetchTeachers();
+  
+  // Initialize Bootstrap components
+  setTimeout(() => {
+    const toastEl = document.getElementById('notification');
+    if (toastEl) {
+      toastNotification.value = new Toast(toastEl);
+    }
+  }, 200);
 });
 
 // Methods
@@ -246,9 +363,34 @@ const fetchTeachers = async () => {
       }
     });
     teachers.value = response.data;
+    sortTeachers();
+    loading.value = false;
   } catch (error) {
     showMessage('Không thể tải danh sách giảng viên', 'danger');
+    loading.value = false;
   }
+};
+
+const sortTeachers = () => {
+  teachers.value.sort((a, b) => {
+    let valueA = a[sortBy.value];
+    let valueB = b[sortBy.value];
+    
+    if (typeof valueA === 'string') {
+      valueA = valueA.toLowerCase();
+      valueB = valueB.toLowerCase();
+    }
+    
+    if (sortOrder.value === 'asc') {
+      return valueA > valueB ? 1 : -1;
+    } else {
+      return valueA < valueB ? 1 : -1;
+    }
+  });
+};
+
+const handleSearchInput = () => {
+  fetchTeachers();
 };
 
 const openAddModal = () => {
@@ -285,7 +427,7 @@ const openEditModal = (teacher) => {
 
 const openDeleteModal = (teacher) => {
   deleteTeacherId.value = teacher.id;
-  deleteTeacherName.value = `${teacher.first_name} ${teacher.last_name}`;
+  deleteTeacherName.value = `${teacher.last_name} ${teacher.first_name}`;
   
   // Show modal
   new Modal(deleteModal.value).show();
@@ -349,6 +491,7 @@ const handleFileChange = async (event) => {
 };
 
 const saveTeacher = async () => {
+  processing.value = true;
   try {
     const token = localStorage.getItem('auth_token');
     
@@ -375,7 +518,7 @@ const saveTeacher = async () => {
         headers: { 'Authorization': token }
       });
       
-      showMessage('Giảng viên đã được cập nhật thành công!', 'success');
+      showMessage('Giảng viên đã được cập nhật thành công!');
     } else {
       // Create new teacher
       const teacherData = { ...currentTeacher.value };
@@ -422,7 +565,7 @@ const saveTeacher = async () => {
         }
       }
       
-      showMessage('Giảng viên mới đã được tạo thành công!', 'success');
+      showMessage('Giảng viên mới đã được tạo thành công!');
     }
     
     // Close modal & refresh list
@@ -430,10 +573,13 @@ const saveTeacher = async () => {
     await fetchTeachers();
   } catch (error) {
     showMessage('Đã xảy ra lỗi: ' + (error.response?.data?.message || error.message), 'danger');
+  } finally {
+    processing.value = false;
   }
 };
 
 const deleteTeacher = async () => {
+  processing.value = true;
   try {
     const token = localStorage.getItem('auth_token');
     await axios.delete(`http://localhost:5000/api/teachers/${deleteTeacherId.value}`, {
@@ -442,13 +588,15 @@ const deleteTeacher = async () => {
       }
     });
     
-    showMessage('Giảng viên đã được xóa thành công!', 'success');
+    showMessage('Giảng viên đã được xóa thành công!');
     
     // Close modal & refresh list
     Modal.getInstance(deleteModal.value).hide();
     await fetchTeachers();
   } catch (error) {
     showMessage('Đã xảy ra lỗi: ' + (error.response?.data?.message || error.message), 'danger');
+  } finally {
+    processing.value = false;
   }
 };
 
@@ -456,9 +604,27 @@ const showMessage = (text, type = 'success') => {
   message.value = text;
   messageType.value = type;
   
+  setTimeout(() => {
+    const toastEl = document.getElementById('notification');
+    if (toastEl) {
+      const toast = new Toast(toastEl);
+      toast.show();
+    }
+  }, 100);
+  
   // Auto hide after 5 seconds
   setTimeout(() => {
     message.value = '';
   }, 5000);
 };
 </script>
+
+<style scoped>
+.teacher-management {
+  padding: 20px;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+</style>

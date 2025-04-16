@@ -1,60 +1,114 @@
 <template>
-  <div class="container mt-4">
-    <h2 class="mb-4">Quản lý sinh viên</h2>
-    
-    <!-- Hiển thị thông báo -->
-    <div v-if="message" :class="'alert alert-' + messageType" role="alert">
-      {{ message }}
-    </div>
-    
-    <!-- Nút thêm mới -->
-    <div class="mb-3">
-      <button class="btn btn-primary" @click="openAddModal">
-        <i class="bi bi-plus-circle me-2"></i>Thêm sinh viên mới
-      </button>
-    </div>
-    
-    <!-- Bảng hiển thị danh sách sinh viên -->
-    <div class="table-responsive">
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>CMND/CCCD</th>
-            <th>Tên</th>
-            <th>Họ</th>
-            <th>Email</th>
-            <th>Số điện thoại</th>
-            <th>Giới tính</th>
-            <th>Ngày sinh</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="student in students" :key="student.id">
-            <td>{{ student.id }}</td>
-            <td>{{ student.identity_number }}</td>
-            <td>{{ student.first_name }}</td>
-            <td>{{ student.last_name }}</td>
-            <td>{{ student.email }}</td>
-            <td>{{ student.phone_number }}</td>
-            <td>{{ student.gender == 'MALE' ? 'Nam' : 'Nữ' }}</td>
-            <td>{{ student.birthday }}</td>
-            <td>
-              <button class="btn btn-sm btn-info me-2" @click="openEditModal(student)">
-                <i class="bi bi-pencil-square"></i>
+  <div class="student-management">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Quản Lý Sinh Viên</h4>
+        <button @click="openAddModal" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i>Thêm Sinh Viên Mới
+        </button>
+      </div>
+      
+      <div class="card-body">
+        <!-- Hiển thị thông báo -->
+        <div v-if="message" :class="'alert alert-' + messageType" role="alert">
+          {{ message }}
+        </div>
+        
+        <!-- Search and filter -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="bi bi-search"></i>
+              </span>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Tìm kiếm theo mã hoặc tên sinh viên..." 
+                v-model="searchQuery"
+                @input="handleSearchInput"
+              >
+              <button class="btn btn-outline-secondary" type="button" @click="fetchStudents">
+                <i class="bi bi-search"></i>
               </button>
-              <button class="btn btn-sm btn-danger" @click="openDeleteModal(student)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <select class="form-select" v-model="sortBy" @change="sortStudents">
+              <option value="id">Sắp xếp theo mã</option>
+              <option value="last_name">Sắp xếp theo họ</option>
+              <option value="first_name">Sắp xếp theo tên</option>
+            </select>
+          </div>
+          
+          <div class="col-md-3">
+            <select class="form-select" v-model="sortOrder" @change="sortStudents">
+              <option value="asc">Tăng dần</option>
+              <option value="desc">Giảm dần</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Loading spinner -->
+        <div v-if="loading" class="text-center my-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Đang tải dữ liệu...</p>
+        </div>
+        
+        <!-- Students table -->
+        <div v-else-if="students.length" class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">ID</th>
+                <th scope="col">CMND/CCCD</th>
+                <th scope="col">Họ và tên</th>
+                <th scope="col">Email</th>
+                <th scope="col">Số điện thoại</th>
+                <th scope="col">Giới tính</th>
+                <th scope="col">Ngày sinh</th>
+                <th scope="col">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(student, index) in students" :key="student.id">
+                <td>{{ index + 1 }}</td>
+                <td>{{ student.id }}</td>
+                <td>{{ student.identity_number }}</td>
+                <td>{{ student.last_name }} {{ student.first_name }}</td>
+                <td>{{ student.email }}</td>
+                <td>{{ student.phone_number }}</td>
+                <td>{{ student.gender == 'MALE' ? 'Nam' : 'Nữ' }}</td>
+                <td>{{ new Date(student.birthday).toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'}) }}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button @click="openEditModal(student)" class="btn btn-outline-primary">
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button @click="openDeleteModal(student)" class="btn btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- No students found -->
+        <div v-else class="text-center my-5">
+          <i class="bi bi-emoji-frown fs-1 text-muted"></i>
+          <p class="mt-2">Không tìm thấy sinh viên nào.</p>
+        </div>
+      </div>
     </div>
     
     <!-- Modal thêm/sửa sinh viên -->
-    <div class="modal fade" id="studentModal" tabindex="-1" aria-hidden="true" ref="studentModal">
+    <div class="modal fade" id="studentModal" tabindex="-1" data-bs-backdrop="static" ref="studentModal">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -120,7 +174,29 @@
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">Ngày sinh <span class="text-danger">*</span></label>
-                      <input type="date" class="form-control" v-model="currentStudent.birthday" required>
+                      <VueFlatpickr
+                        v-model="currentStudent.birthday"
+                        class="form-control"
+                        placeholder="DD/MM/YYYY"
+                        :config="{
+                          dateFormat: 'Y-m-d',
+                          locale: Vietnamese,
+                          allowInput: true,
+                          altFormat: 'd/m/Y',
+                          altInput: true,
+                          parseDate: (datestr, format) => {
+                            // Xử lý khi người dùng nhập 8 số liên tiếp
+                            if (/^\d{8}$/.test(datestr)) {
+                              const day = datestr.substring(0, 2);
+                              const month = datestr.substring(2, 4);
+                              const year = datestr.substring(4, 8);
+                              return new Date(`${year}-${month}-${day}`);
+                            }
+                            return flatpickr.parseDate(datestr, format);
+                          }
+                        }"
+                        required
+                      />
                     </div>
                   </div>
                   
@@ -163,9 +239,12 @@
                 </div>
               </div>
               
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="submit" class="btn btn-primary">Lưu</button>
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-primary" :disabled="processing">
+                  <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  {{ isEditing ? 'Cập nhật' : 'Thêm mới' }}
+                </button>
               </div>
             </form>
           </div>
@@ -174,7 +253,7 @@
     </div>
     
     <!-- Modal xóa sinh viên -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true" ref="deleteModal">
+    <div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static" ref="deleteModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -182,12 +261,29 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            Bạn có chắc chắn muốn xóa sinh viên <strong>{{ deleteStudentName }}</strong>?
+            <p>Bạn có chắc chắn muốn xóa sinh viên <strong>{{ deleteStudentName }}</strong> không?</p>
+            <p class="text-danger"><small>Hành động này không thể hoàn tác.</small></p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-danger" @click="deleteStudent">Xóa</button>
+            <button type="button" class="btn btn-danger" @click="deleteStudent" :disabled="processing">
+              <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              Xóa
+            </button>
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" ref="toastNotification">
+        <div class="toast-header" :class="{'bg-success text-white': messageType === 'success', 'bg-danger text-white': messageType === 'danger'}">
+          <strong class="me-auto">Thông báo</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          {{ message }}
         </div>
       </div>
     </div>
@@ -197,10 +293,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { Modal } from 'bootstrap';
+import { Modal, Toast } from 'bootstrap';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
+import { Vietnamese } from 'flatpickr/dist/l10n/vn.js';
+import VueFlatpickr from 'vue-flatpickr-component';
 
 // State
 const students = ref([]);
+const searchQuery = ref('');
+const loading = ref(true);
+const processing = ref(false);
 const currentStudent = ref({
   id: '',
   identity_number: '',
@@ -226,10 +329,22 @@ const deleteStudentName = ref('');
 const uploadStatus = ref(null);
 const avatarInput = ref(null);
 const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23EEEEEE'/%3E%3Ctext x='75' y='75' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23AAAAAA'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
+const sortBy = ref('id');
+const sortOrder = ref('asc');
+const toastNotification = ref(null);
 
 // Life cycle
 onMounted(async () => {
+  loading.value = true;
   await fetchStudents();
+  
+  // Initialize Bootstrap components
+  setTimeout(() => {
+    const toastEl = document.getElementById('notification');
+    if (toastEl) {
+      toastNotification.value = new Toast(toastEl);
+    }
+  }, 200);
 });
 
 // Methods
@@ -243,9 +358,34 @@ const fetchStudents = async () => {
     });
     console.log("Student data from API:", response.data);
     students.value = response.data;
+    sortStudents();
+    loading.value = false;
   } catch (error) {
     showMessage('Không thể tải danh sách sinh viên', 'danger');
+    loading.value = false;
   }
+};
+
+const sortStudents = () => {
+  students.value.sort((a, b) => {
+    let valueA = a[sortBy.value];
+    let valueB = b[sortBy.value];
+    
+    if (typeof valueA === 'string') {
+      valueA = valueA.toLowerCase();
+      valueB = valueB.toLowerCase();
+    }
+    
+    if (sortOrder.value === 'asc') {
+      return valueA > valueB ? 1 : -1;
+    } else {
+      return valueA < valueB ? 1 : -1;
+    }
+  });
+};
+
+const handleSearchInput = () => {
+  fetchStudents();
 };
 
 const openAddModal = () => {
@@ -281,7 +421,7 @@ const openEditModal = (student) => {
 
 const openDeleteModal = (student) => {
   deleteStudentId.value = student.id;
-  deleteStudentName.value = `${student.first_name} ${student.last_name}`;
+  deleteStudentName.value = `${student.last_name} ${student.first_name}`;
   
   // Show modal
   new Modal(deleteModal.value).show();
@@ -345,6 +485,7 @@ const handleFileChange = async (event) => {
 };
 
 const saveStudent = async () => {
+  processing.value = true;
   try {
     const token = localStorage.getItem('auth_token');
     
@@ -371,7 +512,7 @@ const saveStudent = async () => {
         headers: { 'Authorization': token }
       });
       
-      showMessage('Sinh viên đã được cập nhật thành công!', 'success');
+      showMessage('Sinh viên đã được cập nhật thành công!');
     } else {
       // Create new student
       const studentData = { ...currentStudent.value };
@@ -413,7 +554,7 @@ const saveStudent = async () => {
         }
       }
       
-      showMessage('Sinh viên mới đã được tạo thành công!', 'success');
+      showMessage('Sinh viên mới đã được tạo thành công!');
     }
     
     // Close modal & refresh list
@@ -421,10 +562,13 @@ const saveStudent = async () => {
     await fetchStudents();
   } catch (error) {
     showMessage('Đã xảy ra lỗi: ' + (error.response?.data?.message || error.message), 'danger');
+  } finally {
+    processing.value = false;
   }
 };
 
 const deleteStudent = async () => {
+  processing.value = true;
   try {
     const token = localStorage.getItem('auth_token');
     await axios.delete(`http://localhost:5000/api/students/${deleteStudentId.value}`, {
@@ -433,13 +577,15 @@ const deleteStudent = async () => {
       }
     });
     
-    showMessage('Sinh viên đã được xóa thành công!', 'success');
+    showMessage('Sinh viên đã được xóa thành công!');
     
     // Close modal & refresh list
     Modal.getInstance(deleteModal.value).hide();
     await fetchStudents();
   } catch (error) {
     showMessage('Đã xảy ra lỗi: ' + (error.response?.data?.message || error.message), 'danger');
+  } finally {
+    processing.value = false;
   }
 };
 
@@ -447,9 +593,27 @@ const showMessage = (text, type = 'success') => {
   message.value = text;
   messageType.value = type;
   
+  setTimeout(() => {
+    const toastEl = document.getElementById('notification');
+    if (toastEl) {
+      const toast = new Toast(toastEl);
+      toast.show();
+    }
+  }, 100);
+  
   // Auto hide after 5 seconds
   setTimeout(() => {
     message.value = '';
   }, 5000);
 };
 </script>
+
+<style scoped>
+.student-management {
+  padding: 20px;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+</style>
