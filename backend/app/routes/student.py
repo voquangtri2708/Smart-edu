@@ -3,6 +3,7 @@ from app import db
 from app.models.student import Student
 from app.utils.auth import auth_required, admin_required, student_self_or_admin_required
 from datetime import datetime
+from app.ml.faces import encode_face
 
 student_bp = Blueprint('student', __name__)
 
@@ -13,6 +14,12 @@ def format_date(date):
 @admin_required
 def create_student():
     data = request.get_json()
+    avatar_url = data.get('avatar_url')
+    face_encoding = None
+    
+    if avatar_url:
+        face_encoding = encode_face(avatar_url)
+    
     new_student = Student(
         id=data['id'],
         identity_number=data['identity_number'],
@@ -22,8 +29,9 @@ def create_student():
         last_name=data['last_name'],
         birthday=datetime.strptime(data['birthday'], '%Y-%m-%d').date(),
         address=data['address'],
-        avatar_url=data.get('avatar_url'),
-        gender=data.get('gender', 'MALE')
+        avatar_url=avatar_url,
+        gender=data.get('gender', 'MALE'),
+        face_encoding=face_encoding
     )
     db.session.add(new_student)
     db.session.commit()
@@ -43,7 +51,8 @@ def get_students():
         'birthday': student.birthday.isoformat() if student.birthday else None,
         'address': student.address,
         'avatar_url': student.avatar_url,
-        'gender': student.gender
+        'gender': student.gender,
+        'face_encoding': student.face_encoding is not None
     } for student in students])
 
 @student_bp.route('/students/<string:id>', methods=['GET'])
@@ -60,7 +69,8 @@ def get_student(id):
         "birthday": format_date(student.birthday),
         "address": student.address,
         "avatar_url": student.avatar_url,
-        "gender": student.gender
+        "gender": student.gender,
+        "face_encoding": student.face_encoding is not None
     })
 
 @student_bp.route('/students/<string:id>', methods=['PUT'])
@@ -87,6 +97,9 @@ def update_student(id):
         student.gender = data['gender']
     if 'avatar_url' in data:
         student.avatar_url = data['avatar_url']
+        # Update face encoding when avatar URL is updated
+        if student.avatar_url:
+            student.face_encoding = encode_face(student.avatar_url)
     
     db.session.commit()
     return jsonify({"message": "Student updated successfully"})

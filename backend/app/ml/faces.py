@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import requests
 from io import BytesIO
+import base64
 
 # Khởi tạo mô hình
 mtcnn = MTCNN(image_size=160, margin=20)
@@ -28,6 +29,28 @@ def encode_face(link_face):  # Return LIST embedding
         print("No face detected.")
         return None
 
-def check_face(face_embedding, db_embedding, threshold=0.8): # Return True nếu khớp 
+def encode_face_from_base64(base64_image):  # Return LIST embedding từ ảnh base64
+    try:
+        # Chuyển đổi base64 thành dữ liệu nhị phân
+        image_data = base64.b64decode(base64_image)
+        # Đọc ảnh từ dữ liệu nhị phân
+        img = Image.open(BytesIO(image_data)).convert('RGB')
+    except Exception as e:
+        print(f"Error decoding base64 image: {e}")
+        return None
+
+    face = mtcnn(img)
+
+    if face is not None:
+        face = face.unsqueeze(0)  # [1, 3, 160, 160]
+        with torch.no_grad():
+            embedding = resnet(face).squeeze().tolist()
+        return embedding
+    else:
+        print("No face detected.")
+        return None
+
+def check_face(face_embedding, db_embedding, threshold=0.8): # Return True nếu khớp với ngưỡng nới lỏng hơn
     dist = np.linalg.norm(np.array(face_embedding) - np.array(db_embedding))
+    print(f"Face distance: {dist}, threshold: {threshold}")  # Debug info
     return dist < threshold

@@ -13,6 +13,7 @@ class Teacher(db.Model):
     avatar_url = db.Column(db.String(255), default=None)
     bio = db.Column(db.Text, nullable=True)
     gender = db.Column(db.Enum('MALE', 'FEMALE', name='gender_enum'), nullable=False, default='MALE')
+    face_encoding = db.Column(db.JSON, nullable=True)
 
     def __repr__(self):
         return f'<Teacher {self.first_name} {self.last_name}>'

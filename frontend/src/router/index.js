@@ -9,6 +9,7 @@ import SubjectList from '../views/subject/SubjectList.vue';
 // Lazy loading các trang quản lý 
 const AdminStudentManagement = () => import('@/views/admin/StudentManagement.vue');
 const AdminTeacherManagement = () => import('@/views/admin/TeacherManagement.vue');
+const AdminClassManagement = () => import('@/views/admin/ClassManagement.vue');
 const StudentProfile = () => import('@/views/profile/StudentProfile.vue');
 const TeacherProfile = () => import('@/views/profile/TeacherProfile.vue');
 
@@ -33,6 +34,15 @@ const routes = [
     path: "/admin/subjects", 
     name: "admin-subjects",
     component: SubjectManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
+  { 
+    path: "/admin/classes", 
+    name: "admin-classes",
+    component: AdminClassManagement,
     meta: { 
       requiresAuth: true, 
       requiredRole: "admin" 

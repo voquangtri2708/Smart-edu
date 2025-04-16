@@ -148,6 +148,9 @@
           <router-link to="/admin/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Quản lý môn học
           </router-link>
+          <router-link to="/admin/classes" class="submenu-item" active-class="active">
+            <i class="bi bi-calendar3 me-2"></i>Quản lý lớp học
+          </router-link>
         </div>
       </div>
     </div>
@@ -212,6 +215,8 @@ const highlightActiveMenu = () => {
   } else if (path.includes('admin/teachers')) {
     menuOpen.value.users = true;
   } else if (path.includes('admin/subjects')) {
+    menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/classes')) {
     menuOpen.value.curriculum = true;
   } else if (path.includes('profile/student')) {
     menuOpen.value.profile = true;

@@ -3,6 +3,7 @@ from app import db
 from app.models.teacher import Teacher
 from app.utils.auth import auth_required, admin_required, teacher_self_or_admin_required
 from datetime import datetime
+from app.ml.faces import encode_face
 
 teacher_bp = Blueprint('teacher', __name__)
 
@@ -13,6 +14,12 @@ def format_date(date):
 @admin_required
 def create_teacher():
     data = request.get_json()
+    avatar_url = data.get('avatar_url')
+    face_encoding = None
+    
+    if avatar_url:
+        face_encoding = encode_face(avatar_url)
+    
     new_teacher = Teacher(
         id=data['id'],
         identity_number=data['identity_number'],
@@ -23,8 +30,9 @@ def create_teacher():
         birthday=datetime.strptime(data['birthday'], '%Y-%m-%d').date(),
         address=data['address'],
         gender=data.get('gender'),
-        avatar_url=data.get('avatar_url'),
-        bio=data.get('bio')
+        avatar_url=avatar_url,
+        bio=data.get('bio'),
+        face_encoding=face_encoding
     )
     db.session.add(new_teacher)
     db.session.commit()
@@ -45,7 +53,8 @@ def get_teachers():
         "address": teacher.address,
         "gender": teacher.gender,
         "avatar_url": teacher.avatar_url,
-        "bio": teacher.bio
+        "bio": teacher.bio,
+        "face_encoding": teacher.face_encoding is not None
     } for teacher in teachers])
 
 @teacher_bp.route('/teachers/<string:id>', methods=['GET'])
@@ -63,7 +72,8 @@ def get_teacher(id):
         "address": teacher.address,
         "gender": teacher.gender,
         "avatar_url": teacher.avatar_url,
-        "bio": teacher.bio
+        "bio": teacher.bio,
+        "face_encoding": teacher.face_encoding is not None
     })
 
 @teacher_bp.route('/teachers/<string:id>', methods=['PUT'])
@@ -90,6 +100,9 @@ def update_teacher(id):
         teacher.gender = data['gender']
     if 'avatar_url' in data:
         teacher.avatar_url = data['avatar_url']
+        # Update face encoding when avatar URL is updated
+        if teacher.avatar_url:
+            teacher.face_encoding = encode_face(teacher.avatar_url)
     if 'bio' in data:
         teacher.bio = data['bio']
     
