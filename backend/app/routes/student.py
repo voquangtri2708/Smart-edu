@@ -39,24 +39,57 @@ def create_student():
 
 @student_bp.route('/students', methods=['GET'])
 @auth_required
+@admin_required
 def get_students():
-    students = Student.query.all()
-    return jsonify([{
-        'id': student.id,
-        'identity_number': student.identity_number,
-        'email': student.email,
-        'phone_number': student.phone_number,
-        'first_name': student.first_name,
-        'last_name': student.last_name,
-        'birthday': student.birthday.isoformat() if student.birthday else None,
-        'address': student.address,
-        'avatar_url': student.avatar_url,
-        'gender': student.gender,
-        'face_encoding': student.face_encoding is not None
-    } for student in students])
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_query = request.args.get('query', '')
+    
+    # Limit per_page to prevent performance issues
+    if per_page > 100:
+        per_page = 100
+    
+    # Filter students based on search query
+    query = Student.query
+    if search_query:
+        query = query.filter(
+            # Search by ID or name
+            (Student.id.ilike(f'%{search_query}%')) |
+            (Student.first_name.ilike(f'%{search_query}%')) |
+            (Student.last_name.ilike(f'%{search_query}%')) |
+            (Student.identity_number.ilike(f'%{search_query}%'))
+        )
+    
+    # Apply pagination to the filtered query
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    students = pagination.items
+    
+    return jsonify({
+        'items': [{
+            'id': student.id,
+            'identity_number': student.identity_number,
+            'email': student.email,
+            'phone_number': student.phone_number,
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'birthday': student.birthday.isoformat() if student.birthday else None,
+            'address': student.address,
+            'avatar_url': student.avatar_url,
+            'gender': student.gender,
+            'face_encoding': student.face_encoding is not None
+        } for student in students],
+        'pagination': {
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'page': page,
+            'per_page': per_page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
+        }
+    })
 
 @student_bp.route('/students/<string:id>', methods=['GET'])
-@auth_required
+@student_self_or_admin_required
 def get_student(id):
     student = Student.query.get_or_404(id)
     return jsonify({

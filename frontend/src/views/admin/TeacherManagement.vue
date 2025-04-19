@@ -10,9 +10,9 @@
       
       <div class="card-body">
         <!-- Hiển thị thông báo -->
-        <div v-if="message" :class="'alert alert-' + messageType" role="alert">
+        <!-- <div v-if="message" :class="'alert alert-' + messageType" role="alert">
           {{ message }}
-        </div>
+        </div> -->
         
         <!-- Search and filter -->
         <div class="row mb-3">
@@ -64,7 +64,7 @@
             <thead class="table-light">
               <tr>
                 <th scope="col">#</th>
-                <th scope="col">ID</th>
+                <th scope="col">Mã giảng viên</th>
                 <th scope="col">CMND/CCCD</th>
                 <th scope="col">Họ và tên</th>
                 <th scope="col">Email</th>
@@ -76,7 +76,7 @@
             </thead>
             <tbody>
               <tr v-for="(teacher, index) in teachers" :key="teacher.id">
-                <td>{{ index + 1 }}</td>
+                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                 <td>{{ teacher.id }}</td>
                 <td>{{ teacher.identity_number }}</td>
                 <td>{{ teacher.last_name }} {{ teacher.first_name }}</td>
@@ -97,6 +97,17 @@
               </tr>
             </tbody>
           </table>
+          
+          <!-- Pagination -->
+          <Pagination
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total-items="totalItems"
+            :total-pages="totalPages"
+            item-label="giảng viên"
+            @page-change="changePage"
+            @page-size-change="changePageSize"
+          />
         </div>
         
         <!-- No teachers found -->
@@ -121,7 +132,7 @@
                 <div class="col-md-9">
                   <div class="row">
                     <div class="col-md-6 mb-3">
-                      <label class="form-label">ID <span class="text-danger">*</span></label>
+                      <label class="form-label">Mã giảng viên <span class="text-danger">*</span></label>
                       <input type="text" class="form-control" v-model="currentTeacher.id" 
                         :disabled="isEditing" 
                         maxlength="11" 
@@ -303,6 +314,7 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { Vietnamese } from 'flatpickr/dist/l10n/vn.js';
 import VueFlatpickr from 'vue-flatpickr-component';
+import Pagination from '@/components/Pagination.vue';
 
 // State
 const teachers = ref([]);
@@ -338,6 +350,10 @@ const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/200
 const sortBy = ref('id');
 const sortOrder = ref('asc');
 const toastNotification = ref(null);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const totalItems = ref(0);
+const totalPages = ref(0);
 
 // Life cycle
 onMounted(async () => {
@@ -358,11 +374,24 @@ const fetchTeachers = async () => {
   try {
     const token = localStorage.getItem('auth_token');
     const response = await axios.get('http://localhost:5000/api/teachers', {
+      params: {
+        page: currentPage.value,
+        per_page: pageSize.value,
+        query: searchQuery.value || undefined
+      },
       headers: {
         'Authorization': token
       }
     });
-    teachers.value = response.data;
+    console.log("Teacher data from API:", response.data);
+    
+    // Update with paginated data
+    teachers.value = response.data.items;
+    
+    // Update pagination info
+    totalItems.value = response.data.pagination.total;
+    totalPages.value = response.data.pagination.pages;
+    
     sortTeachers();
     loading.value = false;
   } catch (error) {
@@ -372,6 +401,8 @@ const fetchTeachers = async () => {
 };
 
 const sortTeachers = () => {
+  // Note: This client-side sorting only sorts the current page
+  // For server-side sorting across all data, we would need to add sort parameters to the API call
   teachers.value.sort((a, b) => {
     let valueA = a[sortBy.value];
     let valueB = b[sortBy.value];
@@ -390,6 +421,8 @@ const sortTeachers = () => {
 };
 
 const handleSearchInput = () => {
+  // Reset to first page when searching
+  currentPage.value = 1;
   fetchTeachers();
 };
 
@@ -616,6 +649,17 @@ const showMessage = (text, type = 'success') => {
   setTimeout(() => {
     message.value = '';
   }, 5000);
+};
+
+const changePage = (page) => {
+  currentPage.value = page;
+  fetchTeachers();
+};
+
+const changePageSize = (size) => {
+  pageSize.value = size;
+  currentPage.value = 1; // Reset to first page when changing page size
+  fetchTeachers();
 };
 </script>
 

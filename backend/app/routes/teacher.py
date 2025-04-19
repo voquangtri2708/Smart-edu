@@ -41,21 +41,53 @@ def create_teacher():
 @teacher_bp.route('/teachers', methods=['GET'])
 @auth_required
 def get_teachers():
-    teachers = Teacher.query.all()
-    return jsonify([{
-        "id": teacher.id,
-        "identity_number": teacher.identity_number,
-        "email": teacher.email,
-        "phone_number": teacher.phone_number,
-        "first_name": teacher.first_name,
-        "last_name": teacher.last_name,
-        "birthday": format_date(teacher.birthday),
-        "address": teacher.address,
-        "gender": teacher.gender,
-        "avatar_url": teacher.avatar_url,
-        "bio": teacher.bio,
-        "face_encoding": teacher.face_encoding is not None
-    } for teacher in teachers])
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_query = request.args.get('query', '')
+    
+    # Limit per_page to prevent performance issues
+    if per_page > 100:
+        per_page = 100
+    
+    # Filter teachers based on search query
+    query = Teacher.query
+    if search_query:
+        query = query.filter(
+            # Search by ID or name
+            (Teacher.id.ilike(f'%{search_query}%')) |
+            (Teacher.first_name.ilike(f'%{search_query}%')) |
+            (Teacher.last_name.ilike(f'%{search_query}%')) |
+            (Teacher.identity_number.ilike(f'%{search_query}%'))
+        )
+    
+    # Apply pagination to the filtered query
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    teachers = pagination.items
+    
+    return jsonify({
+        'items': [{
+            "id": teacher.id,
+            "identity_number": teacher.identity_number,
+            "email": teacher.email,
+            "phone_number": teacher.phone_number,
+            "first_name": teacher.first_name,
+            "last_name": teacher.last_name,
+            "birthday": format_date(teacher.birthday),
+            "address": teacher.address,
+            "gender": teacher.gender,
+            "avatar_url": teacher.avatar_url,
+            "bio": teacher.bio,
+            "face_encoding": teacher.face_encoding is not None
+        } for teacher in teachers],
+        'pagination': {
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'page': page,
+            'per_page': per_page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
+        }
+    })
 
 @teacher_bp.route('/teachers/<string:id>', methods=['GET'])
 @auth_required
