@@ -235,7 +235,13 @@ onMounted(async () => {
 const loadClasses = async () => {
   try {
     const response = await axios.get(`http://localhost:5000/api/class_students/student/${studentId.value}/classes`);
-    classes.value = response.data;
+    if (response.data && response.data.items) {
+      // API returns paginated data
+      classes.value = response.data.items;
+    } else {
+      // API returns direct array (backward compatibility)
+      classes.value = response.data;
+    }
   } catch (error) {
     showMessage('Không thể tải danh sách lớp học', 'danger');
   }

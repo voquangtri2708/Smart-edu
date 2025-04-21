@@ -38,7 +38,6 @@ def create_student():
     return jsonify({"message": "Student created successfully"}), 201
 
 @student_bp.route('/students', methods=['GET'])
-@auth_required
 @admin_required
 def get_students():
     page = request.args.get('page', 1, type=int)

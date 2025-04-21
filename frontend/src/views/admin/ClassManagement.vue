@@ -74,7 +74,7 @@
             </thead>
             <tbody>
               <tr v-for="(classItem, index) in classes" :key="classItem.id">
-                <td>{{ index + 1 }}</td>
+                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                 <td>{{ classItem.code }}</td>
                 <td>{{ getSubjectName(classItem.subject_id) }}</td>
                 <td>{{ classItem.max_student }}</td>
@@ -93,6 +93,17 @@
               </tr>
             </tbody>
           </table>
+          
+          <!-- Pagination -->
+          <Pagination
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total-items="totalItems"
+            :total-pages="totalPages"
+            item-label="lớp học"
+            @page-change="changePage"
+            @page-size-change="changePageSize"
+          />
         </div>
         
         <!-- No classes found -->
@@ -139,13 +150,7 @@
                     v-model="currentClass.start_date"
                     class="form-control"
                     placeholder="DD/MM/YYYY"
-                    :config="{
-                      dateFormat: 'Y-m-d',
-                      locale: Vietnamese,
-                      allowInput: true,
-                      altFormat: 'd/m/Y',
-                      altInput: true
-                    }"
+                    :config="flatpickrConfig"
                     required
                   />
                 </div>
@@ -155,13 +160,7 @@
                     v-model="currentClass.end_date"
                     class="form-control"
                     placeholder="DD/MM/YYYY"
-                    :config="{
-                      dateFormat: 'Y-m-d',
-                      locale: Vietnamese,
-                      allowInput: true,
-                      altFormat: 'd/m/Y',
-                      altInput: true
-                    }"
+                    :config="flatpickrConfig"
                     required
                   />
                 </div>
@@ -224,12 +223,14 @@ import axios from 'axios';
 import { Modal, Toast } from 'bootstrap';
 import VueFlatpickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
-import { Vietnamese } from 'flatpickr/dist/l10n/vn.js';
+import Vietnamese from 'flatpickr/dist/l10n/vn.js';
+import Pagination from '@/components/Pagination.vue';
 
 export default {
   name: 'ClassManagement',
   components: {
-    VueFlatpickr
+    VueFlatpickr,
+    Pagination
   },
   setup() {
     // State
@@ -244,10 +245,20 @@ export default {
     const sortBy = ref('code');
     const sortOrder = ref('asc');
     
-    // Modals
-    let classModal = null;
-    let deleteModal = null;
-    let toastNotification = null;
+    // Pagination state
+    const currentPage = ref(1);
+    const pageSize = ref(10);
+    const totalItems = ref(0);
+    const totalPages = ref(0);
+    
+    // Flatpickr configuration
+    const flatpickrConfig = {
+      dateFormat: 'Y-m-d',
+      locale: Vietnamese.vn,
+      allowInput: true,
+      altFormat: 'd/m/Y',
+      altInput: true
+    };
     
     // Current class being edited
     const currentClass = reactive({
@@ -270,11 +281,6 @@ export default {
     
     // Mounted lifecycle hook
     onMounted(() => {
-      // Initialize modals
-      classModal = new Modal(document.getElementById('classModal'));
-      deleteModal = new Modal(document.getElementById('deleteModal'));
-      toastNotification = new Toast(document.getElementById('notification'));
-      
       // Fetch data
       fetchClasses();
       fetchSubjects();
@@ -286,11 +292,27 @@ export default {
       try {
         const token = localStorage.getItem('auth_token');
         const response = await axios.get('http://localhost:5000/api/classes', {
+          params: {
+            page: currentPage.value,
+            per_page: pageSize.value,
+            query: searchQuery.value || undefined
+          },
           headers: {
             'Authorization': token
           }
         });
-        classes.value = response.data;
+        
+        // Update with paginated data
+        if (response.data && response.data.items) {
+          classes.value = response.data.items;
+          
+          // Update pagination info
+          totalItems.value = response.data.pagination.total;
+          totalPages.value = response.data.pagination.pages;
+        } else {
+          classes.value = response.data;
+        }
+        
         sortClasses(); // Apply default sorting
       } catch (error) {
         console.error('Error fetching classes:', error);
@@ -308,7 +330,17 @@ export default {
             'Authorization': token
           }
         });
-        subjects.value = response.data;
+        
+        // Check if response has pagination structure
+        if (response.data && response.data.items) {
+          // API returns paginated data
+          subjects.value = response.data.items;
+        } else {
+          // API returns direct array
+          subjects.value = response.data;
+        }
+        
+        console.log("Loaded subjects:", subjects.value);
       } catch (error) {
         console.error('Error fetching subjects:', error);
         showNotification('Lỗi', 'Không thể tải danh sách môn học', 'error');
@@ -334,17 +366,20 @@ export default {
     };
     
     const handleSearchInput = () => {
-      // Simple client-side filtering
-      if (searchQuery.value.trim() === '') {
-        fetchClasses();
-        return;
-      }
-      
-      const query = searchQuery.value.trim().toLowerCase();
-      const filtered = classes.value.filter(classItem => 
-        classItem.code.toLowerCase().includes(query)
-      );
-      classes.value = filtered;
+      // Reset to first page when searching
+      currentPage.value = 1;
+      fetchClasses();
+    };
+    
+    const changePage = (page) => {
+      currentPage.value = page;
+      fetchClasses();
+    };
+    
+    const changePageSize = (size) => {
+      pageSize.value = size;
+      currentPage.value = 1; // Reset to first page
+      fetchClasses();
     };
     
     const resetForm = () => {
@@ -359,7 +394,15 @@ export default {
     const openCreateModal = () => {
       resetForm();
       isEditing.value = false;
-      classModal.show();
+      
+      const modalElement = document.getElementById('classModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
     };
     
     const openEditModal = (classItem) => {
@@ -367,14 +410,41 @@ export default {
       currentClass.code = classItem.code;
       currentClass.subject_id = classItem.subject_id;
       currentClass.max_student = classItem.max_student;
-      currentClass.start_date = classItem.start_date;
-      currentClass.end_date = classItem.end_date;
+      
+      // Fix date formatting issues
+      if (classItem.start_date) {
+        // Use simple string split to get the date part
+        currentClass.start_date = classItem.start_date.split('T')[0];
+      } else {
+        currentClass.start_date = '';
+      }
+      
+      if (classItem.end_date) {
+        // Use simple string split to get the date part
+        currentClass.end_date = classItem.end_date.split('T')[0];
+      } else {
+        currentClass.end_date = '';
+      }
       
       isEditing.value = true;
-      classModal.show();
+      
+      const modalElement = document.getElementById('classModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
     };
     
     const createClass = async () => {
+      // Validate dates before submitting
+      if (new Date(currentClass.end_date) <= new Date(currentClass.start_date)) {
+        showNotification('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu', 'error');
+        return;
+      }
+      
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
@@ -386,7 +456,13 @@ export default {
         });
         
         await fetchClasses();
-        classModal.hide();
+        
+        const modalElement = document.getElementById('classModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
         showNotification('Thành công', 'Thêm lớp học mới thành công', 'success');
       } catch (error) {
         console.error('Error creating class:', error);
@@ -397,6 +473,12 @@ export default {
     };
     
     const updateClass = async () => {
+      // Validate dates before submitting
+      if (new Date(currentClass.end_date) <= new Date(currentClass.start_date)) {
+        showNotification('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu', 'error');
+        return;
+      }
+      
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
@@ -408,7 +490,13 @@ export default {
         });
         
         await fetchClasses();
-        classModal.hide();
+        
+        const modalElement = document.getElementById('classModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
         showNotification('Thành công', 'Cập nhật lớp học thành công', 'success');
       } catch (error) {
         console.error('Error updating class:', error);
@@ -421,7 +509,15 @@ export default {
     const confirmDelete = (classItem) => {
       deleteClassId.value = classItem.id;
       deleteClassName.value = classItem.code;
-      deleteModal.show();
+      
+      const modalElement = document.getElementById('deleteModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
     };
     
     const deleteClass = async () => {
@@ -435,7 +531,13 @@ export default {
         });
         
         await fetchClasses();
-        deleteModal.hide();
+        
+        const modalElement = document.getElementById('deleteModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
         showNotification('Thành công', 'Xóa lớp học thành công', 'success');
       } catch (error) {
         console.error('Error deleting class:', error);
@@ -449,7 +551,16 @@ export default {
       toastTitle.value = title;
       toastMessage.value = message;
       toastType.value = type;
-      toastNotification.show();
+      
+      // Get the toast element and create instance if needed
+      const toastElement = document.getElementById('notification');
+      let toastInstance = Toast.getInstance(toastElement);
+      
+      if (!toastInstance) {
+        toastInstance = new Toast(toastElement);
+      }
+      
+      toastInstance.show();
     };
     
     const getSubjectName = (subjectId) => {
@@ -483,6 +594,14 @@ export default {
       toastTitle,
       toastMessage,
       toastType,
+      flatpickrConfig,
+      // Pagination
+      currentPage,
+      pageSize,
+      totalItems,
+      totalPages,
+      changePage,
+      changePageSize,
       fetchClasses,
       fetchSubjects,
       handleSearchInput,
@@ -504,4 +623,4 @@ export default {
 .class-management {
   padding: 20px;
 }
-</style> 
+</style>

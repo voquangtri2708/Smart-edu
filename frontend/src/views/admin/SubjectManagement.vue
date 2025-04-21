@@ -68,7 +68,7 @@
             </thead>
             <tbody>
               <tr v-for="(subject, index) in subjects" :key="subject.id">
-                <td>{{ index + 1 }}</td>
+                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                 <td>{{ subject.code }}</td>
                 <td>{{ subject.name }}</td>
                 <td>{{ subject.credit }}</td>
@@ -86,11 +86,25 @@
                     <button @click="confirmDelete(subject)" class="btn btn-outline-danger">
                       <i class="bi bi-trash"></i>
                     </button>
+                    <button @click="openCreateClassModal(subject)" class="btn btn-outline-success">
+                      <i class="bi bi-plus-square"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
+          
+          <!-- Pagination -->
+          <Pagination
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :total-items="totalItems"
+            :total-pages="totalPages"
+            item-label="môn học"
+            @page-change="changePage"
+            @page-size-change="changePageSize"
+          />
         </div>
         
         <!-- No subjects found -->
@@ -102,7 +116,7 @@
     </div>
     
     <!-- Create/Edit Modal -->
-    <div class="modal fade" id="subjectModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade" id="subjectModal" tabindex="-1" data-bs-backdrop="static" ref="subjectModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -145,7 +159,7 @@
     </div>
     
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static" ref="deleteModal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -167,9 +181,65 @@
       </div>
     </div>
     
+    <!-- Create Class Modal -->
+    <div class="modal fade" id="createClassModal" tabindex="-1" data-bs-backdrop="static" ref="createClassModal">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Tạo lớp học mới cho môn {{ selectedSubject.name }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="createClass()">
+              <div class="mb-3">
+                <label class="form-label">Mã lớp học <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="newClass.code" required maxlength="50">
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Sĩ số tối đa <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" v-model="newClass.max_student" required min="1" max="100">
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                  <VueFlatpickr
+                    v-model="newClass.start_date"
+                    class="form-control"
+                    placeholder="DD/MM/YYYY"
+                    :config="flatpickrConfig"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                  <VueFlatpickr
+                    v-model="newClass.end_date"
+                    class="form-control"
+                    placeholder="DD/MM/YYYY"
+                    :config="flatpickrConfig"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-primary" :disabled="processing">
+                  <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                  Tạo lớp học
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!-- Toast Notification -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" ref="toastEl">
         <div class="toast-header" :class="{'bg-success text-white': toastType === 'success', 'bg-danger text-white': toastType === 'error'}">
           <strong class="me-auto">{{ toastTitle }}</strong>
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -186,9 +256,17 @@
 import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 import { Modal, Toast } from 'bootstrap';
+import Pagination from '@/components/Pagination.vue';
+import VueFlatpickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
+import Vietnamese from 'flatpickr/dist/l10n/vn.js';
 
 export default {
   name: 'SubjectManagement',
+  components: {
+    Pagination,
+    VueFlatpickr
+  },
   setup() {
     // State
     const subjects = ref([]);
@@ -204,11 +282,22 @@ export default {
     const toastTitle = ref('Thông báo');
     const toastMessage = ref('');
     const toastType = ref('success');
-
-    // Bootstrap modal instances
-    let subjectModal = null;
-    let deleteModal = null;
-    let toastNotification = null;
+    
+    // Class creation state
+    const selectedSubject = ref({});
+    const newClass = reactive({
+      code: '',
+      subject_id: null,
+      max_student: 30,
+      start_date: '',
+      end_date: ''
+    });
+    
+    // Pagination state
+    const currentPage = ref(1);
+    const pageSize = ref(10);
+    const totalItems = ref(0);
+    const totalPages = ref(0);
 
     // Current subject being edited/created
     const currentSubject = reactive({
@@ -219,13 +308,29 @@ export default {
       description: ''
     });
     
+    // Flatpickr configuration
+    const flatpickrConfig = {
+      dateFormat: 'Y-m-d',
+      locale: Vietnamese.vn,
+      allowInput: true,
+      altFormat: 'd/m/Y',
+      altInput: true,
+      parseDate: (datestr, format) => {
+        // Xử lý khi người dùng nhập 8 số liên tiếp
+        if (/^\d{8}$/.test(datestr)) {
+          return new Date(
+            datestr.substr(4, 4) + '-' + 
+            datestr.substr(2, 2) + '-' + 
+            datestr.substr(0, 2)
+          );
+        }
+        return null; // Let flatpickr handle other formats
+      }
+    };
+    
     // Initialize UI components after mount
     onMounted(() => {
       fetchSubjects();
-      
-      subjectModal = new Modal(document.getElementById('subjectModal'));
-      deleteModal = new Modal(document.getElementById('deleteModal'));
-      toastNotification = new Toast(document.getElementById('notification'));
     });
     
     // Methods
@@ -234,11 +339,23 @@ export default {
       try {
         const token = localStorage.getItem('auth_token');
         const response = await axios.get('http://localhost:5000/api/subjects', {
+          params: {
+            page: currentPage.value,
+            per_page: pageSize.value,
+            query: searchQuery.value || undefined
+          },
           headers: {
             'Authorization': token
           }
         });
-        subjects.value = response.data;
+        
+        // Update with paginated data
+        subjects.value = response.data.items;
+        
+        // Update pagination info
+        totalItems.value = response.data.pagination.total;
+        totalPages.value = response.data.pagination.pages;
+        
         sortSubjects(); // Apply default sorting
       } catch (error) {
         console.error('Error fetching subjects:', error);
@@ -249,6 +366,7 @@ export default {
     };
     
     const sortSubjects = () => {
+      // Note: This client-side sorting only sorts the current page
       subjects.value.sort((a, b) => {
         let valueA = a[sortBy.value];
         let valueB = b[sortBy.value];
@@ -267,7 +385,19 @@ export default {
     };
     
     const handleSearchInput = () => {
-      // Implement debounce logic here if needed
+      // Reset to first page when searching
+      currentPage.value = 1;
+      fetchSubjects();
+    };
+    
+    const changePage = (page) => {
+      currentPage.value = page;
+      fetchSubjects();
+    };
+    
+    const changePageSize = (size) => {
+      pageSize.value = size;
+      currentPage.value = 1; // Reset to first page
       fetchSubjects();
     };
     
@@ -282,7 +412,15 @@ export default {
     const openCreateModal = () => {
       resetForm();
       isEditing.value = false;
-      subjectModal.show();
+      
+      const modalElement = document.getElementById('subjectModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
     };
     
     const openEditModal = (subject) => {
@@ -293,7 +431,15 @@ export default {
       currentSubject.description = subject.description || '';
       
       isEditing.value = true;
-      subjectModal.show();
+      
+      const modalElement = document.getElementById('subjectModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
     };
     
     const createSubject = async () => {
@@ -306,9 +452,15 @@ export default {
             'Content-Type': 'application/json'
           }
         });
-        
+          
         await fetchSubjects();
-        subjectModal.hide();
+          
+        const modalElement = document.getElementById('subjectModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
         showNotification('Thành công', 'Thêm môn học mới thành công', 'success');
       } catch (error) {
         console.error('Error creating subject:', error);
@@ -330,7 +482,13 @@ export default {
         });
         
         await fetchSubjects();
-        subjectModal.hide();
+          
+        const modalElement = document.getElementById('subjectModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
         showNotification('Thành công', 'Cập nhật môn học thành công', 'success');
       } catch (error) {
         console.error('Error updating subject:', error);
@@ -344,7 +502,15 @@ export default {
       deleteSubjectId.value = subject.id;
       deleteSubjectName.value = subject.name;
       deleteSubjectCode.value = subject.code;
-      deleteModal.show();
+      
+      const modalElement = document.getElementById('deleteModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
     };
     
     const deleteSubject = async () => {
@@ -356,9 +522,15 @@ export default {
             'Authorization': token
           }
         });
-        
+         
         await fetchSubjects();
-        deleteModal.hide();
+        
+        const modalElement = document.getElementById('deleteModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
         showNotification('Thành công', 'Xóa môn học thành công', 'success');
       } catch (error) {
         console.error('Error deleting subject:', error);
@@ -372,7 +544,77 @@ export default {
       toastTitle.value = title;
       toastMessage.value = message;
       toastType.value = type;
-      toastNotification.show();
+      
+      const toastElement = document.getElementById('notification');
+      let toastInstance = Toast.getInstance(toastElement);
+      
+      if (!toastInstance) {
+        toastInstance = new Toast(toastElement);
+      }
+      
+      toastInstance.show();
+    };
+    
+    // Open the create class modal
+    const openCreateClassModal = (subject) => {
+      selectedSubject.value = subject;
+      
+      // Reset form and set subject ID
+      newClass.code = `${subject.code}`;
+      newClass.subject_id = subject.id;
+      newClass.max_student = 30;
+      
+      // Set default dates (today and today + 3 months)
+      const today = new Date();
+      const endDate = new Date();
+      endDate.setMonth(today.getMonth() + 3);
+        
+      newClass.start_date = today.toISOString().split('T')[0];
+      newClass.end_date = endDate.toISOString().split('T')[0];
+      
+      // Display the modal - fixed to use the same pattern as other modals
+      const modalElement = document.getElementById('createClassModal');
+      let modalInstance = Modal.getInstance(modalElement);
+      
+      if (!modalInstance) {
+        modalInstance = new Modal(modalElement);
+      }
+      
+      modalInstance.show();
+    };
+    
+    // Create a new class
+    const createClass = async () => {
+      // Validate dates before submitting
+      if (new Date(newClass.end_date) <= new Date(newClass.start_date)) {
+        showNotification('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu', 'error');
+        return;
+      }
+      
+      processing.value = true;
+      try {
+        const token = localStorage.getItem('auth_token');
+        await axios.post('http://localhost:5000/api/classes', newClass, {
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        // Fixed to use Modal.getInstance for closing
+        const modalElement = document.getElementById('createClassModal');
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+        
+        showNotification('Thành công', 'Thêm lớp học mới thành công', 'success');
+      } catch (error) {
+        console.error('Error creating class:', error);
+        showNotification('Lỗi', error.response?.data?.error || 'Không thể thêm lớp học', 'error');
+      } finally {
+        processing.value = false;
+      }
     };
     
     return {
@@ -387,18 +629,30 @@ export default {
       deleteSubjectCode,
       sortBy,
       sortOrder,
+      currentPage,
+      pageSize,
+      totalItems,
+      totalPages,
       toastTitle,
       toastMessage,
       toastType,
       fetchSubjects,
       handleSearchInput,
-      sortSubjects,
       openCreateModal,
       openEditModal,
       createSubject,
       updateSubject,
       confirmDelete,
-      deleteSubject
+      deleteSubject,
+      sortSubjects,
+      changePage,
+      changePageSize,
+      // Class creation
+      selectedSubject,
+      newClass,
+      flatpickrConfig,
+      openCreateClassModal,
+      createClass
     };
   }
 };

@@ -39,7 +39,7 @@ def create_teacher():
     return jsonify({"message": "Teacher created successfully"}), 201
 
 @teacher_bp.route('/teachers', methods=['GET'])
-@auth_required
+@admin_required
 def get_teachers():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -90,7 +90,7 @@ def get_teachers():
     })
 
 @teacher_bp.route('/teachers/<string:id>', methods=['GET'])
-@auth_required
+@teacher_self_or_admin_required
 def get_teacher(id):
     teacher = Teacher.query.get_or_404(id)
     return jsonify({
