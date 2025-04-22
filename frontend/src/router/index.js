@@ -2,14 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
 import StudentFeedback from '@/views/StudentFeedback.vue';
-import AdminFeedbackManagement from '@/views/AdminFeedbackManagement.vue';
+import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';
-import SubjectList from '../views/subject/SubjectList.vue';
 
 // Lazy loading các trang quản lý 
 const AdminStudentManagement = () => import('@/views/admin/StudentManagement.vue');
 const AdminTeacherManagement = () => import('@/views/admin/TeacherManagement.vue');
 const AdminClassManagement = () => import('@/views/admin/ClassManagement.vue');
+const AdminClassStudentsManagement = () => import('@/views/admin/ClassStudentsManagement.vue');
+const AdminClassTeachersManagement = () => import('@/views/admin/ClassTeachersManagement.vue');
 const StudentProfile = () => import('@/views/profile/StudentProfile.vue');
 const TeacherProfile = () => import('@/views/profile/TeacherProfile.vue');
 
@@ -17,7 +18,7 @@ const routes = [
   { path: "/", component: HomePageView },
   { path: "/login", component: Login },
   { path: "/student-feedbacks", component: StudentFeedback },
-  { path: "/admin-feedback-management", component: AdminFeedbackManagement },
+  { path: "/feedbacks", component: AdminFeedbackManagement },
   
   // Admin routes
   { 
@@ -48,6 +49,23 @@ const routes = [
       requiredRole: "admin" 
     }
   },
+  {
+    path: '/admin/class-students/:id',
+    name: 'admin-class-students-management',
+    component: AdminClassStudentsManagement,
+    props: true
+  },
+  {
+    path: '/admin/class-teachers/:id',
+    name: 'admin-class-teachers-management',
+    component: AdminClassTeachersManagement,
+    props: true
+  },
+  {
+    path: '/admin/feedbacks',
+    name: 'admin-feedback-management',
+    component: AdminFeedbackManagement
+  },
   
   // Profile routes
   { 
@@ -69,14 +87,6 @@ const routes = [
       if (userRole === 'teacher') return '/profile/teacher';
       return '/';
     }
-  },
-  
-  // General Subject List Route
-  { 
-    path: "/subjects", 
-    name: "subjects",
-    component: SubjectList,
-    meta: { requiresAuth: true }
   },
 ];
 

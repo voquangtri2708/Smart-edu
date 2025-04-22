@@ -82,12 +82,18 @@
                 <td>{{ formatDate(classItem.end_date) }}</td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <button @click="openEditModal(classItem)" class="btn btn-outline-primary">
+                    <button @click="openEditModal(classItem)" class="btn btn-outline-primary" title="Sửa">
                       <i class="bi bi-pencil-square"></i>
                     </button>
-                    <button @click="confirmDelete(classItem)" class="btn btn-outline-danger">
+                    <button @click="confirmDelete(classItem)" class="btn btn-outline-danger" title="Xóa">
                       <i class="bi bi-trash"></i>
                     </button>
+                    <router-link :to="`/admin/class-students/${classItem.id}`" class="btn btn-outline-success" title="Quản lý sinh viên">
+                      <i class="bi bi-people-fill"></i>
+                    </router-link>
+                    <router-link :to="`/admin/class-teachers/${classItem.id}`" class="btn btn-outline-info" title="Quản lý giáo viên">
+                      <i class="bi bi-person-workspace"></i>
+                    </router-link>
                   </div>
                 </td>
               </tr>

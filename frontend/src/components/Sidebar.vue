@@ -130,7 +130,7 @@
         </div>
         
         <div v-if="menuOpen.management" class="submenu">
-          <router-link to="/admin-feedback-management" class="submenu-item" active-class="active">
+          <router-link to="/feedbacks" class="submenu-item" active-class="active">
             <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
           </router-link>
         </div>
@@ -208,7 +208,7 @@ const highlightActiveMenu = () => {
   // Mở menu phù hợp với route hiện tại
   if (path.includes('student-feedbacks')) {
     menuOpen.value.survey = true;
-  } else if (path.includes('admin-feedback-management')) {
+  } else if (path.includes('feedbacks')) {
     menuOpen.value.management = true;
   } else if (path.includes('admin/students')) {
     menuOpen.value.users = true;

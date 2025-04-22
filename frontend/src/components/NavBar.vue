@@ -109,7 +109,7 @@
                 <i :class="submenuOpen.management ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
               </div>
               <div v-if="submenuOpen.management" class="mobile-submenu">
-                <router-link to="/admin-feedback-management" class="mobile-submenu-item">
+                <router-link to="/feedbacks" class="mobile-submenu-item">
                   Quản lý đánh giá
                 </router-link>
               </div>
