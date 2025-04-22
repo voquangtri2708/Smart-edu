@@ -14,8 +14,17 @@ def create_app():
 
     db.init_app(app)
     
-    # Cấu hình CORS chi tiết
-    CORS(app, resources={r"/api/*": {"origins": "*", "supports_credentials": True}})
+    # Sửa cấu hình CORS
+    # Xác định cụ thể các methods và headers được phép
+    CORS(app, 
+         resources={r"/api/*": {
+             "origins": ["http://localhost:5173", "http://localhost:3000"], 
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+             "expose_headers": ["Content-Length", "Content-Type"],
+             "supports_credentials": True,
+             "max_age": 600
+         }})
 
     # Import và đăng ký Blueprint sau khi tạo app
     from app.routes.account import account_bp

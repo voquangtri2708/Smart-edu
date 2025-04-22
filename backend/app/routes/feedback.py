@@ -6,111 +6,155 @@ from app.models.class_student import ClassStudent
 from app.models.class_teacher import ClassTeacher
 from app.ml.pred import prediction
 from app.utils.auth import auth_required, admin_required, student_self_or_admin_required
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
+import logging
 
 feedback_bp = Blueprint('feedback', __name__)
+
+# Thêm endpoint xử lý preflight OPTIONS request
+@feedback_bp.route('/feedbacks', methods=['OPTIONS'])
+def handle_feedbacks_options():
+    resp = jsonify({'success': True})
+    # Thêm CORS headers
+    resp.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    resp.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    resp.headers['Access-Control-Max-Age'] = '3600'
+    return resp, 200
 
 @feedback_bp.route('/feedbacks', methods=['POST'])
 @auth_required
 def create_feedback():
-    data = request.get_json()
-    
-    # Chỉ học sinh mới có thể tạo đánh giá
-    if g.role != 'student':
-        return jsonify({"message": "Chỉ học sinh mới có quyền đánh giá"}), 403
-    
-    student_id = g.student_id  # Lấy student_id từ token
-    class_id = data.get('class_id')
-    feedback_type = data.get('feedback_type')
-    teacher_id = data.get('teacher_id')
-    classroom_id = data.get('classroom_id')
-    content = data.get('content')
-    
-    # Validation
-    if not all([student_id, class_id, feedback_type, content]):
-        return jsonify({"message": "Thiếu thông tin bắt buộc"}), 400
-    
-    if feedback_type not in ['TEACHER', 'CLASSROOM']:
-        return jsonify({"message": "Loại đánh giá không hợp lệ"}), 400
-    
-    if feedback_type == 'TEACHER' and not teacher_id:
-        return jsonify({"message": "Thiếu thông tin giảng viên"}), 400
-    
-    if feedback_type == 'CLASSROOM' and not classroom_id:
-        return jsonify({"message": "Thiếu thông tin phòng học"}), 400
-    
-    # Kiểm tra học sinh có thuộc lớp không
-    student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
-    if not student_in_class:
-        return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
-    
-    # Kiểm tra giảng viên có dạy lớp không (nếu là đánh giá giảng viên)
-    if feedback_type == 'TEACHER':
-        teacher_in_class = ClassTeacher.query.filter_by(teacher_id=teacher_id, class_id=class_id).first()
-        if not teacher_in_class:
-            return jsonify({"message": "Giảng viên không dạy lớp này"}), 403
-    
-    # Kiểm tra học sinh đã đánh giá trong lớp này chưa
-    if feedback_type == 'TEACHER':
-        existing_feedback = Feedback.query.filter_by(
-            student_id=student_id,
-            class_id=class_id,
-            teacher_id=teacher_id,
-            feedback_type='TEACHER'
-        ).first()
-        
-        if existing_feedback:
-            return jsonify({"message": "Bạn đã đánh giá giảng viên này trong lớp này"}), 409
-    else:
-        existing_feedback = Feedback.query.filter_by(
-            student_id=student_id,
-            class_id=class_id,
-            classroom_id=classroom_id,
-            feedback_type='CLASSROOM'
-        ).first()
-        
-        if existing_feedback:
-            return jsonify({"message": "Bạn đã đánh giá phòng học này trong lớp này"}), 409
-    
-    # Lấy start_date và end_date từ bảng class và tính end_date + 7 ngày
-    class_ = Class.query.get_or_404(class_id)
-    start_date = class_.start_date
-    end_date = class_.end_date
-    
-    # Kiểm tra thời gian có nằm trong khoảng cho phép đánh giá không
-    current_date = datetime.now().date()
-    feedback_end_date = class_.end_date + datetime.timedelta(days=7)
-    
-    if current_date < start_date:
-        return jsonify({"message": "Chưa đến thời gian đánh giá"}), 403
-    if current_date > feedback_end_date:
-        return jsonify({"message": "Đã kết thúc thời gian đánh giá"}), 403
-    
-    # Dự đoán sentiment sử dụng model
-    sentiment_label = prediction(content)
-    sentiment_map = {0: "NEGATIVE", 1: "NEUTRAL", 2: "POSITIVE"}
-    predicted_sentiment = sentiment_map[sentiment_label]
-    
-    new_feedback = Feedback(
-        content=content,
-        student_id=student_id,
-        class_id=class_id,
-        teacher_id=teacher_id if feedback_type == 'TEACHER' else None,
-        classroom_id=classroom_id if feedback_type == 'CLASSROOM' else None,
-        start_date=start_date,
-        end_date=feedback_end_date,
-        sentiment=predicted_sentiment,
-        feedback_type=feedback_type
-    )
-    
     try:
-        db.session.add(new_feedback)
-        db.session.commit()
-        return jsonify({"message": "Feedback created successfully"}), 201
-    except IntegrityError as e:
-        db.session.rollback()
-        return jsonify({"message": f"Lỗi: {str(e)}"}), 400
+        data = request.get_json()
+        logging.info(f"Received feedback data: {data}")
+        
+        # Chỉ học sinh mới có thể tạo đánh giá
+        logging.info(f"Current user role: {g.role}, student_id: {g.student_id}")
+        if g.role != 'student':
+            return jsonify({"message": "Chỉ học sinh mới có quyền đánh giá"}), 403
+        
+        student_id = g.student_id  # Lấy student_id từ token
+        class_id = data.get('class_id')
+        feedback_type = data.get('feedback_type')
+        teacher_id = data.get('teacher_id')
+        classroom_id = data.get('classroom_id')
+        content = data.get('content')
+        
+        logging.info(f"Processing feedback - student_id: {student_id}, class_id: {class_id}, feedback_type: {feedback_type}")
+        
+        # Validation
+        if not all([student_id, class_id, feedback_type, content]):
+            logging.warning(f"Missing required information: student_id={student_id}, class_id={class_id}, feedback_type={feedback_type}, content={'present' if content else 'missing'}")
+            return jsonify({"message": "Thiếu thông tin bắt buộc"}), 400
+        
+        if feedback_type not in ['TEACHER', 'CLASSROOM']:
+            logging.warning(f"Invalid feedback type: {feedback_type}")
+            return jsonify({"message": "Loại đánh giá không hợp lệ"}), 400
+        
+        if feedback_type == 'TEACHER' and not teacher_id:
+            logging.warning("Missing teacher_id for TEACHER feedback")
+            return jsonify({"message": "Thiếu thông tin giảng viên"}), 400
+        
+        if feedback_type == 'CLASSROOM' and not classroom_id:
+            logging.warning("Missing classroom_id for CLASSROOM feedback")
+            return jsonify({"message": "Thiếu thông tin phòng học"}), 400
+        
+        # Kiểm tra học sinh có thuộc lớp không
+        student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
+        logging.info(f"Student in class check: {student_in_class}")
+        if not student_in_class:
+            logging.warning(f"Student {student_id} not found in class {class_id}")
+            return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
+        
+        # Kiểm tra giảng viên có dạy lớp không (nếu là đánh giá giảng viên)
+        if feedback_type == 'TEACHER':
+            teacher_in_class = ClassTeacher.query.filter_by(teacher_id=teacher_id, class_id=class_id).first()
+            logging.info(f"Teacher in class check: {teacher_in_class}")
+            if not teacher_in_class:
+                logging.warning(f"Teacher {teacher_id} not found in class {class_id}")
+                return jsonify({"message": "Giảng viên không dạy lớp này"}), 403
+        
+        # Kiểm tra học sinh đã đánh giá trong lớp này chưa
+        if feedback_type == 'TEACHER':
+            existing_feedback = Feedback.query.filter_by(
+                student_id=student_id,
+                class_id=class_id,
+                teacher_id=teacher_id,
+                feedback_type='TEACHER'
+            ).first()
+            
+            if existing_feedback:
+                logging.info(f"Student {student_id} already gave feedback to teacher {teacher_id} in class {class_id}")
+                return jsonify({"message": "Bạn đã đánh giá giảng viên này trong lớp này"}), 409
+        else:
+            existing_feedback = Feedback.query.filter_by(
+                student_id=student_id,
+                class_id=class_id,
+                classroom_id=classroom_id,
+                feedback_type='CLASSROOM'
+            ).first()
+            
+            if existing_feedback:
+                logging.info(f"Student {student_id} already gave feedback to classroom {classroom_id} in class {class_id}")
+                return jsonify({"message": "Bạn đã đánh giá phòng học này trong lớp này"}), 409
+        
+        # Lấy start_date và end_date từ bảng class và tính end_date + 7 ngày
+        class_ = Class.query.get_or_404(class_id)
+        start_date = class_.start_date
+        end_date = class_.end_date
+        
+        # Kiểm tra thời gian có nằm trong khoảng cho phép đánh giá không
+        current_date = datetime.now().date()
+        feedback_end_date = end_date + timedelta(days=7)
+        
+        logging.info(f"Date check - current: {current_date}, start: {start_date}, end: {feedback_end_date}")
+        if current_date < start_date:
+            logging.warning(f"Too early to give feedback - current: {current_date}, start: {start_date}")
+            return jsonify({"message": "Chưa đến thời gian đánh giá"}), 403
+        if current_date > feedback_end_date:
+            logging.warning(f"Too late to give feedback - current: {current_date}, end: {feedback_end_date}")
+            return jsonify({"message": "Đã kết thúc thời gian đánh giá"}), 403
+        
+        # Dự đoán sentiment sử dụng model
+        try:
+            sentiment_label = prediction(content)
+            sentiment_map = {0: "NEGATIVE", 1: "NEUTRAL", 2: "POSITIVE"}
+            predicted_sentiment = sentiment_map[sentiment_label]
+            logging.info(f"Sentiment prediction: {predicted_sentiment}")
+        except Exception as e:
+            logging.error(f"Sentiment prediction error: {str(e)}")
+            predicted_sentiment = "NEUTRAL"  # Default if prediction fails
+        
+        new_feedback = Feedback(
+            content=content,
+            student_id=student_id,
+            class_id=class_id,
+            teacher_id=teacher_id if feedback_type == 'TEACHER' else None,
+            classroom_id=classroom_id if feedback_type == 'CLASSROOM' else None,
+            start_date=start_date,
+            end_date=feedback_end_date,
+            sentiment=predicted_sentiment,
+            feedback_type=feedback_type
+        )
+        
+        try:
+            db.session.add(new_feedback)
+            db.session.commit()
+            logging.info(f"Feedback created successfully - id: {new_feedback.id}")
+            return jsonify({"message": "Feedback created successfully"}), 201
+        except IntegrityError as e:
+            db.session.rollback()
+            logging.error(f"IntegrityError: {str(e)}")
+            return jsonify({"message": f"Lỗi: {str(e)}"}), 400
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error creating feedback: {str(e)}")
+            return jsonify({"message": f"Lỗi không xác định: {str(e)}"}), 500
+    except Exception as e:
+        logging.error(f"Unhandled exception in create_feedback: {str(e)}")
+        return jsonify({"message": f"Internal Server Error: {str(e)}"}), 500
 
 @feedback_bp.route('/feedbacks', methods=['GET'])
 @auth_required
@@ -223,6 +267,7 @@ def delete_feedback(id):
 @auth_required
 def get_teachers_for_feedback(student_id, class_id):
     """Lấy danh sách giảng viên mà học sinh có thể đánh giá"""
+    logging.info(f"Getting teachers for student {student_id} in class {class_id}")
     
     # Kiểm tra quyền: chỉ admin hoặc chính học sinh đó mới có thể xem
     if g.role != 'admin':
@@ -230,76 +275,97 @@ def get_teachers_for_feedback(student_id, class_id):
             return jsonify({"message": "Không có quyền truy cập"}), 403
     
     # Kiểm tra học sinh có thuộc lớp không
-    student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
-    if not student_in_class:
-        return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
-    
-    # Lấy danh sách giảng viên đã được đánh giá bởi học sinh này trong lớp này
-    evaluated_teachers = db.session.query(Feedback.teacher_id).filter_by(
-        student_id=student_id,
-        class_id=class_id,
-        feedback_type='TEACHER'
-    ).all()
-    
-    evaluated_teacher_ids = [t.teacher_id for t in evaluated_teachers]
-    
-    # Lấy tất cả giảng viên trong lớp học
-    class_teachers = ClassTeacher.query.filter_by(class_id=class_id).all()
-    
-    # Lọc ra các giảng viên chưa được đánh giá
-    available_teachers = []
-    
-    for class_teacher in class_teachers:
-        teacher = class_teacher.teacher
-        if teacher.id not in evaluated_teacher_ids:
-            available_teachers.append({
-                "id": teacher.id,
-                "first_name": teacher.first_name,
-                "last_name": teacher.last_name,
-                "email": teacher.email
-            })
-    
-    return jsonify(available_teachers)
+    try:
+        student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
+        logging.info(f"Student in class check: {student_in_class}")
+        
+        if not student_in_class:
+            logging.warning(f"Student {student_id} not found in class {class_id}")
+            return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
+        
+        # Lấy danh sách giảng viên đã được đánh giá bởi học sinh này trong lớp này
+        evaluated_teachers = db.session.query(Feedback.teacher_id).filter_by(
+            student_id=student_id,
+            class_id=class_id,
+            feedback_type='TEACHER'
+        ).all()
+        
+        evaluated_teacher_ids = [t.teacher_id for t in evaluated_teachers]
+        logging.info(f"Evaluated teacher IDs: {evaluated_teacher_ids}")
+        
+        # Lấy tất cả giảng viên trong lớp học
+        class_teachers = ClassTeacher.query.filter_by(class_id=class_id).all()
+        logging.info(f"Class teachers count: {len(class_teachers)}")
+        
+        # Lọc ra các giảng viên chưa được đánh giá
+        available_teachers = []
+        
+        for class_teacher in class_teachers:
+            teacher = class_teacher.teacher
+            if teacher.id not in evaluated_teacher_ids:
+                available_teachers.append({
+                    "id": teacher.id,
+                    "first_name": teacher.first_name,
+                    "last_name": teacher.last_name,
+                    "email": teacher.email
+                })
+        
+        logging.info(f"Available teachers count: {len(available_teachers)}")
+        return jsonify(available_teachers)
+    except Exception as e:
+        logging.error(f"Error in get_teachers_for_feedback: {str(e)}")
+        return jsonify({"message": f"Internal Server Error: {str(e)}"}), 500
 
 @feedback_bp.route('/feedbacks/student/<string:student_id>/classes/<int:class_id>/classrooms', methods=['GET'])
 @auth_required
 def get_classrooms_for_feedback(student_id, class_id):
     """Lấy danh sách phòng học mà học sinh có thể đánh giá"""
+    logging.info(f"Getting classrooms for student {student_id} in class {class_id}")
     
     # Kiểm tra quyền: chỉ admin hoặc chính học sinh đó mới có thể xem
     if g.role != 'admin':
         if g.role != 'student' or g.student_id != student_id:
             return jsonify({"message": "Không có quyền truy cập"}), 403
     
-    # Kiểm tra học sinh có thuộc lớp không
-    student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
-    if not student_in_class:
-        return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
-    
-    # Lấy danh sách phòng học đã được đánh giá bởi học sinh này trong lớp này
-    evaluated_classrooms = db.session.query(Feedback.classroom_id).filter_by(
-        student_id=student_id,
-        class_id=class_id,
-        feedback_type='CLASSROOM'
-    ).all()
-    
-    evaluated_classroom_ids = [c.classroom_id for c in evaluated_classrooms]
-    
-    # Lấy tất cả phòng học (đơn giản hóa, thực tế cần lấy từ class_schedule)
-    # Giữ nguyên logic cũ tương tự như classroom_feedback.py
-    from app.models.classroom import Classroom
-    classrooms = Classroom.query.all()
-    
-    # Lọc ra các phòng học chưa được đánh giá
-    available_classrooms = []
-    
-    for classroom in classrooms:
-        if classroom.id not in evaluated_classroom_ids:
-            available_classrooms.append({
-                "id": classroom.id,
-                "room_number": classroom.room_number,
-                "capacity": classroom.capacity,
-                "building_id": classroom.building_id
-            })
-    
-    return jsonify(available_classrooms)
+    try:
+        # Kiểm tra học sinh có thuộc lớp không
+        student_in_class = ClassStudent.query.filter_by(student_id=student_id, class_id=class_id).first()
+        logging.info(f"Student in class check: {student_in_class}")
+        
+        if not student_in_class:
+            logging.warning(f"Student {student_id} not found in class {class_id}")
+            return jsonify({"message": "Học sinh không thuộc lớp này"}), 403
+        
+        # Lấy danh sách phòng học đã được đánh giá bởi học sinh này trong lớp này
+        evaluated_classrooms = db.session.query(Feedback.classroom_id).filter_by(
+            student_id=student_id,
+            class_id=class_id,
+            feedback_type='CLASSROOM'
+        ).all()
+        
+        evaluated_classroom_ids = [c.classroom_id for c in evaluated_classrooms]
+        logging.info(f"Evaluated classroom IDs: {evaluated_classroom_ids}")
+        
+        # Lấy tất cả phòng học (đơn giản hóa, thực tế cần lấy từ class_schedule)
+        # Giữ nguyên logic cũ tương tự như classroom_feedback.py
+        from app.models.classroom import Classroom
+        classrooms = Classroom.query.all()
+        logging.info(f"Total classrooms count: {len(classrooms)}")
+        
+        # Lọc ra các phòng học chưa được đánh giá
+        available_classrooms = []
+        
+        for classroom in classrooms:
+            if classroom.id not in evaluated_classroom_ids:
+                available_classrooms.append({
+                    "id": classroom.id,
+                    "room_number": classroom.room_number,
+                    "capacity": classroom.capacity,
+                    "building_id": classroom.building_id
+                })
+        
+        logging.info(f"Available classrooms count: {len(available_classrooms)}")
+        return jsonify(available_classrooms)
+    except Exception as e:
+        logging.error(f"Error in get_classrooms_for_feedback: {str(e)}")
+        return jsonify({"message": f"Internal Server Error: {str(e)}"}), 500

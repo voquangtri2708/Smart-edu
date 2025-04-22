@@ -160,7 +160,7 @@
     </div>
 
     <!-- Toast notification -->
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
       <div 
         class="toast align-items-center text-white border-0" 
         :class="`bg-${messageType}`"
@@ -168,9 +168,12 @@
         aria-live="assertive" 
         aria-atomic="true"
         ref="toast"
+        data-bs-autohide="true"
+        data-bs-delay="3000"
       >
         <div class="d-flex">
           <div class="toast-body">
+            <i :class="getToastIcon(messageType)" class="me-2"></i>
             {{ message }}
           </div>
           <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -181,9 +184,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import { Toast } from 'bootstrap';
+import api from '../utils/api'; // Import API utility
 
 const studentId = ref(''); // Lấy từ localStorage khi tích hợp authentication
 const classes = ref([]);
@@ -205,7 +209,7 @@ const feedbackContent = ref({
 
 // Computed property để kiểm tra nếu có thể đánh giá
 const canFeedback = computed(() => {
-  return feedbackAvailability.value && feedbackAvailability.value.can_feedback;
+  return feedbackAvailability.value && feedbackAvailability.value.is_available;
 });
 
 // Computed property để hiển thị trạng thái
@@ -229,12 +233,24 @@ onMounted(async () => {
     return;
   }
   
+  // Initialize Bootstrap toast
+  // Need to wait for DOM to be ready
+  nextTick(() => {
+    if (toast.value) {
+      // Khởi tạo Toast một lần ở đây
+      toast.value._bsToast = new Toast(toast.value, {
+        autohide: true,
+        delay: 3000
+      });
+    }
+  });
+  
   await loadClasses();
 });
 
 const loadClasses = async () => {
   try {
-    const response = await axios.get(`http://localhost:5000/api/class_students/student/${studentId.value}/classes`);
+    const response = await api.get(`/class_students/student/${studentId.value}/classes`);
     if (response.data && response.data.items) {
       // API returns paginated data
       classes.value = response.data.items;
@@ -243,6 +259,7 @@ const loadClasses = async () => {
       classes.value = response.data;
     }
   } catch (error) {
+    console.error('Error loading classes:', error);
     showMessage('Không thể tải danh sách lớp học', 'danger');
   }
 };
@@ -251,28 +268,28 @@ const loadData = async () => {
   if (!selectedClassId.value) return;
   
   try {
-    // Kiểm tra khả năng đánh giá
-    const availabilityResponse = await axios.get(
-      `http://localhost:5000/api/feedback_availability/${selectedClassId.value}`
+    // Kiểm tra khả năng đánh giá - Fix endpoint URL
+    const availabilityResponse = await api.get(
+      `/feedback-availability?class_id=${selectedClassId.value}`
     );
     feedbackAvailability.value = availabilityResponse.data;
     
-    // Tải danh sách giảng viên
+    // Tải danh sách giảng viên - Fix endpoint URL
     loadingTeachers.value = true;
     try {
-      const teacherResponse = await axios.get(
-        `http://localhost:5000/api/class_teachers/student/${studentId.value}/classes/${selectedClassId.value}/teachers`
+      const teacherResponse = await api.get(
+        `/feedbacks/student/${studentId.value}/classes/${selectedClassId.value}/teachers`
       );
       teachers.value = teacherResponse.data;
     } finally {
       loadingTeachers.value = false;
     }
     
-    // Tải danh sách phòng học
+    // Tải danh sách phòng học - Fix endpoint URL
     loadingClassrooms.value = true;
     try {
-      const classroomResponse = await axios.get(
-        `http://localhost:5000/api/classroom_feedbacks/student/${studentId.value}/classes/${selectedClassId.value}/classrooms`
+      const classroomResponse = await api.get(
+        `/feedbacks/student/${studentId.value}/classes/${selectedClassId.value}/classrooms`
       );
       classrooms.value = classroomResponse.data;
     } finally {
@@ -280,6 +297,7 @@ const loadData = async () => {
     }
     
   } catch (error) {
+    console.error('Error loading data:', error);
     showMessage('Không thể tải dữ liệu', 'danger');
   }
 };
@@ -298,13 +316,24 @@ const submitTeacherFeedback = async (teacherId) => {
   }
   
   try {
-    await axios.post('http://localhost:5000/api/teacher_feedbacks', {
+    console.log('Submitting teacher feedback:', {
       content,
       student_id: studentId.value,
       class_id: selectedClassId.value,
-      teacher_id: teacherId
+      teacher_id: teacherId,
+      feedback_type: 'TEACHER'
     });
     
+    // Fix API endpoint to use the unified feedback endpoint
+    const response = await api.post('/feedbacks', {
+      content,
+      student_id: studentId.value,
+      class_id: selectedClassId.value,
+      teacher_id: teacherId,
+      feedback_type: 'TEACHER'
+    });
+    
+    console.log('Teacher feedback response:', response.data);
     showMessage('Đánh giá giảng viên đã được gửi thành công', 'success');
     feedbackContent.value.teachers[teacherId] = '';
     
@@ -312,10 +341,26 @@ const submitTeacherFeedback = async (teacherId) => {
     loadData();
     
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.message) {
-      showMessage(error.response.data.message, 'danger');
+    console.error('Error submitting teacher feedback:', error);
+    
+    if (error.response) {
+      // Server trả về response với status code không thành công
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+      
+      if (error.response.data && error.response.data.message) {
+        showMessage(error.response.data.message, 'danger');
+      } else {
+        showMessage(`Lỗi ${error.response.status}: Không thể gửi đánh giá`, 'danger');
+      }
+    } else if (error.request) {
+      // Request được gửi nhưng không nhận được response
+      console.error('Error request:', error.request);
+      showMessage('Không nhận được phản hồi từ máy chủ', 'danger');
     } else {
-      showMessage('Có lỗi xảy ra khi gửi đánh giá', 'danger');
+      // Có lỗi khi thiết lập request
+      console.error('Error setting up request:', error.message);
+      showMessage(`Lỗi: ${error.message}`, 'danger');
     }
   }
 };
@@ -334,13 +379,24 @@ const submitClassroomFeedback = async (classroomId) => {
   }
   
   try {
-    await axios.post('http://localhost:5000/api/classroom_feedbacks', {
+    console.log('Submitting classroom feedback:', {
       content,
       student_id: studentId.value,
       class_id: selectedClassId.value,
-      classroom_id: classroomId
+      classroom_id: classroomId,
+      feedback_type: 'CLASSROOM'
     });
     
+    // Fix API endpoint to use the unified feedback endpoint
+    const response = await api.post('/feedbacks', {
+      content,
+      student_id: studentId.value,
+      class_id: selectedClassId.value,
+      classroom_id: classroomId,
+      feedback_type: 'CLASSROOM'
+    });
+    
+    console.log('Classroom feedback response:', response.data);
     showMessage('Đánh giá phòng học đã được gửi thành công', 'success');
     feedbackContent.value.classrooms[classroomId] = '';
     
@@ -348,10 +404,26 @@ const submitClassroomFeedback = async (classroomId) => {
     loadData();
     
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.message) {
-      showMessage(error.response.data.message, 'danger');
+    console.error('Error submitting classroom feedback:', error);
+    
+    if (error.response) {
+      // Server trả về response với status code không thành công
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+      
+      if (error.response.data && error.response.data.message) {
+        showMessage(error.response.data.message, 'danger');
+      } else {
+        showMessage(`Lỗi ${error.response.status}: Không thể gửi đánh giá`, 'danger');
+      }
+    } else if (error.request) {
+      // Request được gửi nhưng không nhận được response
+      console.error('Error request:', error.request);
+      showMessage('Không nhận được phản hồi từ máy chủ', 'danger');
     } else {
-      showMessage('Có lỗi xảy ra khi gửi đánh giá', 'danger');
+      // Có lỗi khi thiết lập request
+      console.error('Error setting up request:', error.message);
+      showMessage(`Lỗi: ${error.message}`, 'danger');
     }
   }
 };
@@ -432,10 +504,34 @@ const showMessage = (msg, type = 'info') => {
   message.value = msg;
   messageType.value = type;
   
-  // Sử dụng Bootstrap Toast
-  if (toast.value) {
-    const bsToast = new Toast(toast.value);
-    bsToast.show();
+  console.log(`Showing message: ${msg} (${type})`);
+  
+  // Đảm bảo DOM đã được cập nhật trước khi hiển thị toast
+  nextTick(() => {
+    // Sử dụng Bootstrap Toast đã được khởi tạo từ trước
+    if (toast.value && toast.value._bsToast) {
+      toast.value._bsToast.show();
+    } else if (toast.value) {
+      // Nếu chưa được khởi tạo, khởi tạo lại
+      toast.value._bsToast = new Toast(toast.value, {
+        autohide: true,
+        delay: 3000
+      });
+      toast.value._bsToast.show();
+    } else {
+      // Backup hiển thị bằng alert nếu toast không hoạt động
+      console.warn('Toast element not initialized, showing alert instead');
+      alert(`${type.toUpperCase()}: ${msg}`);
+    }
+  });
+};
+
+const getToastIcon = (type) => {
+  switch (type) {
+    case 'success': return 'bi bi-check-circle-fill';
+    case 'danger': return 'bi bi-exclamation-triangle-fill';
+    case 'warning': return 'bi bi-exclamation-circle-fill';
+    default: return 'bi bi-info-circle-fill';
   }
 };
 </script>
