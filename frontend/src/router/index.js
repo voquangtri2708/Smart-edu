@@ -1,45 +1,74 @@
 import { createRouter, createWebHistory } from 'vue-router';
+
+// Views thông thường
 import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
 import StudentFeedback from '@/views/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/AdminFeedbackManagement.vue';
 
-// Lazy loading các trang quản lý 
+// Lazy loading các trang quản trị và profile
 const AdminStudentManagement = () => import('@/views/admin/StudentManagement.vue');
 const AdminTeacherManagement = () => import('@/views/admin/TeacherManagement.vue');
 const StudentProfile = () => import('@/views/profile/StudentProfile.vue');
 const TeacherProfile = () => import('@/views/profile/TeacherProfile.vue');
+
+// Quản lý lịch học
+const ScheduleManagement = () => import('@/views/admin/ScheduleManagement.vue');
+
+// ✅ Quản lý lớp học
+const ClassManagement = () => import('@/views/admin/ClassManagement.vue');
 
 const routes = [
   { path: "/", component: HomePageView },
   { path: "/login", component: Login },
   { path: "/student-feedbacks", component: StudentFeedback },
   { path: "/admin-feedback-management", component: AdminFeedbackManagement },
-  
+
   // Admin routes
-  { 
-    path: "/admin/students", 
+  {
+    path: "/admin/students",
     component: AdminStudentManagement,
     meta: { requiresAdmin: true }
   },
-  { 
-    path: "/admin/teachers", 
+  {
+    path: "/admin/teachers",
     component: AdminTeacherManagement,
     meta: { requiresAdmin: true }
   },
-  
+
   // Profile routes
-  { 
-    path: "/profile/student", 
+  {
+    path: "/profile/student",
     component: StudentProfile,
     meta: { requiresStudent: true }
   },
-  { 
-    path: "/profile/teacher", 
+  {
+    path: "/profile/teacher",
     component: TeacherProfile,
     meta: { requiresTeacher: true }
   },
-  // Thêm route redirect cho /profile
+
+  // Quản lý lịch học
+  {
+    path: "/schedule-management",
+    component: ScheduleManagement,
+    meta: { requiresTeacher: true }
+  },
+  {
+    path: "/admin/schedule-management",
+    name: "ScheduleManagement",
+    component: ScheduleManagement
+  },
+
+  // ✅ Route mới cho quản lý lớp học
+  {
+    path: "/admin/class-management",
+    name: "ClassManagement",
+    component: ClassManagement,
+    meta: { requiresTeacher: true } // Hoặc đổi thành requiresAdmin nếu cần
+  },
+
+  // Redirect cho profile
   {
     path: "/profile",
     redirect: to => {
@@ -48,7 +77,7 @@ const routes = [
       if (userRole === 'teacher') return '/profile/teacher';
       return '/';
     }
-  },
+  }
 ];
 
 const router = createRouter({
@@ -56,38 +85,39 @@ const router = createRouter({
   routes,
 });
 
+// 📌 Kiểm tra quyền truy cập
 router.beforeEach((to, from, next) => {
   const userRole = localStorage.getItem("user_role");
 
-  // Chưa đăng nhập thì chuyển hướng đến trang login
+  // Chưa đăng nhập
   if (!userRole && to.path !== "/login") {
     next("/login");
     return;
-  } 
-  
-  // Đã đăng nhập mà cố vào trang login thì chuyển về trang chủ
+  }
+
+  // Đã đăng nhập mà truy cập login
   if (userRole && to.path === "/login") {
-    next("/"); 
+    next("/");
     return;
   }
-  
-  // Kiểm tra quyền truy cập
+
+  // Kiểm tra quyền hạn
   if (to.meta.requiresAdmin && userRole !== 'admin') {
-    next('/'); // Chuyển về trang chủ nếu không phải admin
+    next('/');
     return;
   }
-  
+
   if (to.meta.requiresStudent && userRole !== 'student') {
-    next('/'); // Chuyển về trang chủ nếu không phải student
+    next('/');
     return;
   }
-  
+
   if (to.meta.requiresTeacher && userRole !== 'teacher') {
-    next('/'); // Chuyển về trang chủ nếu không phải teacher
+    next('/');
     return;
   }
-  
-  next(); // Cho phép truy cập
+
+  next();
 });
 
 export default router;
