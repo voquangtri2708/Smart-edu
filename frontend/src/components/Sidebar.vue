@@ -1,4 +1,3 @@
-<!-- filepath: d:\Code\Smart-edu\frontend\src\components\Sidebar.vue -->
 <template>
   <div class="sidebar" :class="{ 'hidden': !isExpanded }">
     <div class="sidebar-inner">
@@ -131,6 +130,36 @@
             <i class="bi bi-person-badge me-2"></i>Quản lý giảng viên
           </router-link>
         </div>
+
+        <!-- Thêm mới: Quản lý lịch học -->
+        <div class="menu-item" @click="toggleMenu('schedule')">
+          <div class="menu-item-content">
+            <i class="bi bi-calendar3 me-2"></i>
+            <span>Quản lý lịch học</span>
+          </div>
+          <i :class="getIconClass('schedule')"></i>
+        </div>
+        
+        <div v-if="menuOpen.schedule" class="submenu">
+          <router-link to="/admin/schedule-management" class="submenu-item" active-class="active">
+            <i class="bi bi-calendar-check me-2"></i>Quản lý lịch học
+          </router-link>
+        </div>
+
+        <!-- ✅ Quản lý lớp học -->
+        <div class="menu-item" @click="toggleMenu('class')">
+          <div class="menu-item-content">
+            <i class="bi bi-building me-2"></i>
+            <span>Quản lý lớp học</span>
+          </div>
+          <i :class="getIconClass('class')"></i>
+        </div>
+        <div v-if="menuOpen.class" class="submenu">
+          <router-link to="/admin/class-management" class="submenu-item" active-class="active">
+            <i class="bi bi-door-open me-2"></i>Danh sách lớp học
+          </router-link>
+        </div>
+
       </div>
     </div>
   </div>
@@ -153,6 +182,9 @@ const menuOpen = ref({
   management: false,
   users: false,
   profile: false,
+  schedule: false, // Thêm mới
+  class: false, // ✅ Thêm mới
+
 });
 
 // Lấy role từ localStorage khi component được mount
@@ -188,14 +220,14 @@ const highlightActiveMenu = () => {
     menuOpen.value.survey = true;
   } else if (path.includes('admin-feedback-management')) {
     menuOpen.value.management = true;
-  } else if (path.includes('admin/students')) {
+  } else if (path.includes('admin/students') || path.includes('admin/teachers')) {
     menuOpen.value.users = true;
-  } else if (path.includes('admin/teachers')) {
-    menuOpen.value.users = true;
-  } else if (path.includes('profile/student')) {
+  } else if (path.includes('profile/student') || path.includes('profile/teacher')) {
     menuOpen.value.profile = true;
-  } else if (path.includes('profile/teacher')) {
-    menuOpen.value.profile = true;
+  } else if (path.includes('admin/schedule-management')) {
+    menuOpen.value.schedule = true;
+  } else if (path.includes('admin/class-management')) {
+    menuOpen.value.class = true; // ✅
   }
 };
 
