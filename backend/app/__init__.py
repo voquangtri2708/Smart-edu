@@ -18,7 +18,7 @@ def create_app():
     # Xác định cụ thể các methods và headers được phép
     CORS(app, 
          resources={r"/api/*": {
-             "origins": ["http://localhost:5173", "http://localhost:3000"], 
+             "origins": "*", 
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
              "expose_headers": ["Content-Length", "Content-Type"],

@@ -40,7 +40,7 @@
                 class="form-control" 
                 placeholder="Tìm kiếm sinh viên..." 
                 v-model="searchQuery"
-                @input="handleSearchInput"
+                @input="onSearchInput"
               >
               <button class="btn btn-outline-secondary" type="button" @click="fetchStudents">
                 <i class="bi bi-search"></i>
@@ -137,7 +137,7 @@
                   class="form-control" 
                   placeholder="Nhập mã, tên sinh viên hoặc email..." 
                   v-model="searchStudentQuery"
-                  @input="searchAvailableStudents"
+                  @input="onSearchStudents"
                 >
               </div>
               <small class="text-muted">Tìm kiếm sinh viên chưa đăng ký lớp này.</small>
@@ -244,6 +244,7 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { Modal, Toast } from 'bootstrap';
 import Pagination from '@/components/Pagination.vue';
+import { debounce } from '@/utils/debounce';
 
 export default {
   name: 'ClassStudentsManagement',
@@ -389,11 +390,30 @@ export default {
       }
     };
     
-    // Search handling
-    const handleSearchInput = () => {
+    // Direct handler for input events
+    const onSearchInput = () => {
+      debouncedSearch();
+    };
+    
+    const onSearchStudents = () => {
+      debouncedSearchStudents();
+    };
+    
+    // Create debounced search functions
+    const debouncedSearch = debounce(() => {
       currentPage.value = 1;
       fetchStudents();
-    };
+    }, 500);
+    
+    const debouncedSearchStudents = debounce(() => {
+      if (!searchStudentQuery.value.trim()) {
+        availableStudents.value = [];
+        return;
+      }
+      
+      loadingAvailableStudents.value = true;
+      searchAvailableStudents();
+    }, 500);
     
     const changePage = (page) => {
       currentPage.value = page;
@@ -423,12 +443,6 @@ export default {
     
     // Search for available students (not already in the class)
     const searchAvailableStudents = async () => {
-      if (!searchStudentQuery.value.trim()) {
-        availableStudents.value = [];
-        return;
-      }
-      
-      loadingAvailableStudents.value = true;
       try {
         const token = localStorage.getItem('auth_token');
         const response = await axios.get('http://localhost:5000/api/students', {
@@ -605,7 +619,8 @@ export default {
       
       // Methods
       fetchStudents,
-      handleSearchInput,
+      onSearchInput,
+      onSearchStudents,
       changePage,
       changePageSize,
       openAddStudentModal,
@@ -622,4 +637,4 @@ export default {
 .class-students-management {
   padding: 20px;
 }
-</style> 
+</style>

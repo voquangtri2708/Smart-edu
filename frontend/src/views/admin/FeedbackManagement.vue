@@ -55,7 +55,7 @@
                     class="form-control" 
                     placeholder="Tìm kiếm..." 
                     v-model="filters.searchTerm"
-                    @input="debounceSearch"
+                    @input="onSearchInput"
                   >
                   <button class="btn btn-outline-primary" type="button" @click="fetchFeedbacks">
                     <i class="bi bi-search"></i>
@@ -289,6 +289,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { Modal, Toast } from 'bootstrap';
+import { debounce } from '@/utils/debounce';
 
 // Biến lưu trữ dữ liệu
 const feedbacks = ref([]);
@@ -487,15 +488,16 @@ const resetFilters = () => {
   fetchFeedbacks();
 };
 
-// Debounce cho tìm kiếm
-let searchTimeout = null;
-const debounceSearch = () => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    currentPage.value = 1;
-    fetchFeedbacks();
-  }, 500);
+// Direct handler for input event
+const onSearchInput = () => {
+  debouncedSearch();
 };
+
+// Create a debounced search function
+const debouncedSearch = debounce(() => {
+  currentPage.value = 1;
+  fetchFeedbacks();
+}, 500);
 
 // Hàm hiển thị toast
 const showToast = (message, type = 'info') => {

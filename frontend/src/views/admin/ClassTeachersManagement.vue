@@ -38,7 +38,7 @@
                 class="form-control" 
                 placeholder="Tìm kiếm giáo viên..." 
                 v-model="searchQuery"
-                @input="handleSearchInput"
+                @input="onSearchInput"
               >
               <button class="btn btn-outline-secondary" type="button" @click="fetchTeachers">
                 <i class="bi bi-search"></i>
@@ -130,7 +130,7 @@
                   class="form-control" 
                   placeholder="Nhập mã, tên giáo viên hoặc email..." 
                   v-model="searchTeacherQuery"
-                  @input="searchAvailableTeachers"
+                  @input="onSearchTeachers"
                 >
               </div>
               <small class="text-muted">Tìm kiếm giáo viên chưa được phân công cho lớp này.</small>
@@ -237,6 +237,7 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { Modal, Toast } from 'bootstrap';
 import Pagination from '@/components/Pagination.vue';
+import { debounce } from '@/utils/debounce';
 
 export default {
   name: 'ClassTeachersManagement',
@@ -375,11 +376,30 @@ export default {
       }
     };
     
-    // Search handling
-    const handleSearchInput = () => {
+    // Direct handler for input events
+    const onSearchInput = () => {
+      debouncedSearch();
+    };
+    
+    const onSearchTeachers = () => {
+      debouncedSearchTeachers();
+    };
+    
+    // Create debounced search functions
+    const debouncedSearch = debounce(() => {
       currentPage.value = 1;
       fetchTeachers();
-    };
+    }, 500);
+    
+    const debouncedSearchTeachers = debounce(() => {
+      if (!searchTeacherQuery.value.trim()) {
+        availableTeachers.value = [];
+        return;
+      }
+      
+      loadingAvailableTeachers.value = true;
+      searchAvailableTeachers();
+    }, 500);
     
     const changePage = (page) => {
       currentPage.value = page;
@@ -409,12 +429,6 @@ export default {
     
     // Search for available teachers (not already in the class)
     const searchAvailableTeachers = async () => {
-      if (!searchTeacherQuery.value.trim()) {
-        availableTeachers.value = [];
-        return;
-      }
-      
-      loadingAvailableTeachers.value = true;
       try {
         const token = localStorage.getItem('auth_token');
         const response = await axios.get('http://localhost:5000/api/teachers', {
@@ -583,7 +597,8 @@ export default {
       
       // Methods
       fetchTeachers,
-      handleSearchInput,
+      onSearchInput,
+      onSearchTeachers,
       changePage,
       changePageSize,
       openAddTeacherModal,
@@ -600,4 +615,4 @@ export default {
 .class-teachers-management {
   padding: 20px;
 }
-</style> 
+</style>

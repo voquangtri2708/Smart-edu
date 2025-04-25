@@ -26,7 +26,7 @@
                 class="form-control" 
                 placeholder="Tìm kiếm theo mã hoặc tên giảng viên..." 
                 v-model="searchQuery"
-                @input="handleSearchInput"
+                @input="onSearchInput"
               >
               <button class="btn btn-outline-secondary" type="button" @click="fetchTeachers">
                 <i class="bi bi-search"></i>
@@ -315,6 +315,7 @@ import 'flatpickr/dist/flatpickr.min.css';
 import { Vietnamese } from 'flatpickr/dist/l10n/vn.js';
 import VueFlatpickr from 'vue-flatpickr-component';
 import Pagination from '@/components/Pagination.vue';
+import { debounce } from '@/utils/debounce';
 
 // State
 const teachers = ref([]);
@@ -420,11 +421,16 @@ const sortTeachers = () => {
   });
 };
 
-const handleSearchInput = () => {
-  // Reset to first page when searching
+// Direct handler for input event
+const onSearchInput = (event) => {
+  debouncedSearch();
+};
+
+// Create a debounced search function
+const debouncedSearch = debounce(() => {
   currentPage.value = 1;
   fetchTeachers();
-};
+}, 500);
 
 const openAddModal = () => {
   isEditing.value = false;

@@ -21,7 +21,7 @@
                 class="form-control" 
                 placeholder="Tìm kiếm theo mã hoặc tên môn học..." 
                 v-model="searchQuery"
-                @input="handleSearchInput"
+                @input="onSearchInput"
               >
               <button class="btn btn-outline-secondary" type="button" @click="fetchSubjects">
                 <i class="bi bi-search"></i>
@@ -260,6 +260,7 @@ import Pagination from '@/components/Pagination.vue';
 import VueFlatpickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 import Vietnamese from 'flatpickr/dist/l10n/vn.js';
+import { debounce } from '@/utils/debounce';
 
 export default {
   name: 'SubjectManagement',
@@ -379,16 +380,19 @@ export default {
         if (sortOrder.value === 'asc') {
           return valueA > valueB ? 1 : -1;
         } else {
-          return valueA < valueB ? 1 : -1;
+          return valueA < valueB ? -1 : 1;
         }
       });
     };
     
-    const handleSearchInput = () => {
-      // Reset to first page when searching
+    const onSearchInput = () => {
+      debouncedSearch();
+    };
+
+    const debouncedSearch = debounce(() => {
       currentPage.value = 1;
       fetchSubjects();
-    };
+    }, 500);
     
     const changePage = (page) => {
       currentPage.value = page;
@@ -637,7 +641,7 @@ export default {
       toastMessage,
       toastType,
       fetchSubjects,
-      handleSearchInput,
+      onSearchInput,
       openCreateModal,
       openEditModal,
       createSubject,

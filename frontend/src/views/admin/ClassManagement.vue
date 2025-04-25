@@ -26,7 +26,7 @@
                 class="form-control" 
                 placeholder="Tìm kiếm theo mã lớp học..." 
                 v-model="searchQuery"
-                @input="handleSearchInput"
+                @input="onSearchInput"
               >
               <button class="btn btn-outline-secondary" type="button" @click="fetchClasses">
                 <i class="bi bi-search"></i>
@@ -231,6 +231,7 @@ import VueFlatpickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 import Vietnamese from 'flatpickr/dist/l10n/vn.js';
 import Pagination from '@/components/Pagination.vue';
+import { debounce } from '@/utils/debounce';
 
 export default {
   name: 'ClassManagement',
@@ -371,11 +372,15 @@ export default {
       });
     };
     
-    const handleSearchInput = () => {
+    const onSearchInput = () => {
+      debouncedSearch();
+    };
+    
+    const debouncedSearch = debounce(() => {
       // Reset to first page when searching
       currentPage.value = 1;
       fetchClasses();
-    };
+    }, 500);
     
     const changePage = (page) => {
       currentPage.value = page;
@@ -610,7 +615,7 @@ export default {
       changePageSize,
       fetchClasses,
       fetchSubjects,
-      handleSearchInput,
+      onSearchInput,
       sortClasses,
       openCreateModal,
       openEditModal,
