@@ -4,6 +4,13 @@ import HomePageView from '@/views/HomePageView.vue';
 import StudentFeedback from '@/views/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';
+import CampusManagement from '@/views/admin/CampusManagement.vue';
+
+// New import for ClassroomManagement
+import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
+
+// New imports for building and classroom management
+import BuildingManagement from '@/views/admin/BuildingManagement.vue';
 
 // Lazy loading các trang quản lý 
 const AdminStudentManagement = () => import('@/views/admin/StudentManagement.vue');
@@ -65,6 +72,39 @@ const routes = [
     path: '/admin/feedbacks',
     name: 'admin-feedback-management',
     component: AdminFeedbackManagement
+  },
+  {
+    path: '/admin/campuses',
+    name: 'admin-campus-management',
+    component: CampusManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
+
+  // Add route for building management
+  {
+    path: '/admin/campuses/:campusId/buildings',
+    name: 'building-management',
+    component: BuildingManagement,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
+
+  // Route for classroom management
+  {
+    path: '/admin/buildings/:buildingId/classrooms',
+    name: 'classroom-management',
+    component: ClassroomManagement,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
   },
   
   // Profile routes

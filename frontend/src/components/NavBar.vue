@@ -112,6 +112,9 @@
                 <router-link to="/feedbacks" class="mobile-submenu-item">
                   Quản lý đánh giá
                 </router-link>
+                <router-link to="/admin/campuses" class="mobile-submenu-item">
+                  Quản lý cơ sở vật chất
+                </router-link>
               </div>
             </template>
 

@@ -152,6 +152,21 @@
             <i class="bi bi-calendar3 me-2"></i>Quản lý lớp học
           </router-link>
         </div>
+        
+        <!-- Thêm mới: Quản lý cơ sở vật chất -->
+        <div class="menu-item" @click="toggleMenu('campuses')">
+          <div class="menu-item-content">
+            <i class="bi bi-building me-2"></i>
+            <span>Quản lý cơ sở vật chất</span>
+          </div>
+          <i :class="getIconClass('facilities')"></i>
+        </div>
+        
+        <div v-if="menuOpen.campuses" class="submenu">
+          <router-link to="/admin/campuses" class="submenu-item" active-class="active">
+            <i class="bi bi-geo-alt me-2"></i>Quản lý cơ sở
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -175,6 +190,7 @@ const menuOpen = ref({
   users: false,
   profile: false,
   curriculum: false,
+  facilities: false,
 });
 
 // Lấy role từ localStorage khi component được mount
@@ -218,6 +234,8 @@ const highlightActiveMenu = () => {
     menuOpen.value.curriculum = true;
   } else if (path.includes('admin/classes')) {
     menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/campuses')) {
+    menuOpen.value.campuses = true;
   } else if (path.includes('profile/student')) {
     menuOpen.value.profile = true;
   } else if (path.includes('profile/teacher')) {
