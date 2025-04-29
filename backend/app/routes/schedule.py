@@ -3,6 +3,11 @@ from app import db
 from app.models.schedule import Schedule
 from app.models.class_student import ClassStudent
 from app.models.class_teacher import ClassTeacher
+from app.models.classroom import Classroom
+from app.models.building import Building
+from app.models.campus import Campus
+from app.models.classs import Class
+from app.models.subject import Subject
 from app.utils.auth import auth_required, admin_required
 from datetime import datetime, time, date
 from sqlalchemy import and_, or_
@@ -114,7 +119,25 @@ def get_schedules():
     if per_page > 100:
         per_page = 100
     
-    query = Schedule.query
+    # Base query with joins to get related data
+    query = db.session.query(
+        Schedule,
+        Class,
+        Subject,
+        Classroom,
+        Building,
+        Campus
+    ).join(
+        Class, Schedule.class_id == Class.id
+    ).join(
+        Subject, Class.subject_id == Subject.id, isouter=True
+    ).join(
+        Classroom, Schedule.classroom_id == Classroom.id
+    ).join(
+        Building, Classroom.building_id == Building.id, isouter=True
+    ).join(
+        Campus, Building.campus_id == Campus.id, isouter=True
+    )
     
     # Filter based on user role
     if g.role == 'student':
@@ -131,30 +154,34 @@ def get_schedules():
     # Optional filters
     class_id = request.args.get('class_id', type=int)
     if class_id:
-        query = query.filter_by(class_id=class_id)
+        query = query.filter(Schedule.class_id == class_id)
     
     classroom_id = request.args.get('classroom_id', type=int)
     if classroom_id:
-        query = query.filter_by(classroom_id=classroom_id)
+        query = query.filter(Schedule.classroom_id == classroom_id)
     
     day_of_week = request.args.get('day_of_week')
     if day_of_week:
         if day_of_week.isdigit():
             day_num = int(day_of_week)
             if 1 <= day_num <= 7:
-                query = query.filter_by(day_of_week=DAY_MAP[day_num])
+                query = query.filter(Schedule.day_of_week == DAY_MAP[day_num])
         else:
-            query = query.filter_by(day_of_week=day_of_week)
+            query = query.filter(Schedule.day_of_week == day_of_week)
     
     # Order by day of week and start time for natural schedule display
     query = query.order_by(Schedule.day_of_week, Schedule.start_time)
     
-    # Apply pagination
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    schedules = pagination.items
+    # Get total count for pagination
+    total = query.count()
     
-    return jsonify({
-        'items': [{
+    # Apply pagination manually since we're using a complex query
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+    
+    # Format results
+    result_items = []
+    for schedule, class_, subject, classroom, building, campus in items:
+        item = {
             "id": schedule.id,
             "class_id": schedule.class_id,
             "classroom_id": schedule.classroom_id,
@@ -162,15 +189,33 @@ def get_schedules():
             "day_number": DAY_NUMBER.get(schedule.day_of_week, 0),
             "start_time": format_time(schedule.start_time),
             "end_time": format_time(schedule.end_time),
-            "specific_date": format_date(schedule.specific_date)
-        } for schedule in schedules],
+            "specific_date": format_date(schedule.specific_date),
+            # Class and subject information
+            "class_code": class_.code if class_ else None,
+            "subject_id": subject.id if subject else None,
+            "subject_code": subject.code if subject else None,
+            "subject_name": subject.name if subject else None,
+            # Classroom, building and campus information
+            "classroom_number": classroom.room_number if classroom else None,
+            "building_id": building.id if building else None,
+            "building_name": building.name if building else None,
+            "campus_id": campus.id if campus else None,
+            "campus_name": campus.name if campus else None
+        }
+        result_items.append(item)
+    
+    # Calculate pagination values
+    total_pages = (total + per_page - 1) // per_page  # Ceiling division
+    
+    return jsonify({
+        'items': result_items,
         'pagination': {
-            'total': pagination.total,
-            'pages': pagination.pages,
+            'total': total,
+            'pages': total_pages,
             'page': page,
             'per_page': per_page,
-            'has_next': pagination.has_next,
-            'has_prev': pagination.has_prev
+            'has_next': page < total_pages,
+            'has_prev': page > 1
         }
     })
 
@@ -178,7 +223,30 @@ def get_schedules():
 @schedule_bp.route('/schedules/<int:id>', methods=['GET'])
 @auth_required
 def get_schedule(id):
-    schedule = Schedule.query.get_or_404(id)
+    # Query schedule with all related information
+    result = db.session.query(
+        Schedule,
+        Class,
+        Subject,
+        Classroom,
+        Building,
+        Campus
+    ).join(
+        Class, Schedule.class_id == Class.id
+    ).join(
+        Subject, Class.subject_id == Subject.id, isouter=True
+    ).join(
+        Classroom, Schedule.classroom_id == Classroom.id
+    ).join(
+        Building, Classroom.building_id == Building.id, isouter=True
+    ).join(
+        Campus, Building.campus_id == Campus.id, isouter=True
+    ).filter(Schedule.id == id).first()
+    
+    if not result:
+        return jsonify({"error": "Lịch học không tồn tại"}), 404
+    
+    schedule, class_, subject, classroom, building, campus = result
     
     # Check if the user has permission to view this schedule
     if g.role == 'student':
@@ -192,6 +260,7 @@ def get_schedule(id):
         if schedule.class_id not in teacher_class_ids:
             return jsonify({"error": "Bạn không có quyền xem lịch học này"}), 403
     
+    # Format the response with all the additional information
     return jsonify({
         "id": schedule.id,
         "class_id": schedule.class_id,
@@ -200,7 +269,18 @@ def get_schedule(id):
         "day_number": DAY_NUMBER.get(schedule.day_of_week, 0),
         "start_time": format_time(schedule.start_time),
         "end_time": format_time(schedule.end_time),
-        "specific_date": format_date(schedule.specific_date)
+        "specific_date": format_date(schedule.specific_date),
+        # Class and subject information
+        "class_code": class_.code if class_ else None,
+        "subject_id": subject.id if subject else None,
+        "subject_code": subject.code if subject else None,
+        "subject_name": subject.name if subject else None,
+        # Classroom, building and campus information
+        "classroom_number": classroom.room_number if classroom else None,
+        "building_id": building.id if building else None,
+        "building_name": building.name if building else None,
+        "campus_id": campus.id if campus else None,
+        "campus_name": campus.name if campus else None
     })
 
 # Update a schedule (admin only)

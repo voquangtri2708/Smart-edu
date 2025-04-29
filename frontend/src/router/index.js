@@ -5,6 +5,7 @@ import StudentFeedback from '@/views/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';
 import CampusManagement from '@/views/admin/CampusManagement.vue';
+import ScheduleManagement from '@/views/admin/ScheduleManagement.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -77,6 +78,15 @@ const routes = [
     path: '/admin/campuses',
     name: 'admin-campus-management',
     component: CampusManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
+  {
+    path: '/admin/schedules',
+    name: 'admin-schedule-management',
+    component: ScheduleManagement,
     meta: { 
       requiresAuth: true, 
       requiredRole: "admin" 

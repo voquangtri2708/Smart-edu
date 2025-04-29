@@ -151,6 +151,9 @@
           <router-link to="/admin/classes" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3 me-2"></i>Quản lý lớp học
           </router-link>
+          <router-link to="/admin/schedules" class="submenu-item" active-class="active">
+            <i class="bi bi-clock me-2"></i>Quản lý lịch học
+          </router-link>
         </div>
         
         <!-- Thêm mới: Quản lý cơ sở vật chất -->
