@@ -30,7 +30,7 @@
             <select v-model="filters.classroom_id" class="form-select">
               <option value="">Tất cả phòng học</option>
               <option v-for="classroom in classrooms" :key="classroom.id" :value="classroom.id">
-                {{ classroom.room_number }} - {{ getBuildingName(classroom.building_id) }}
+                {{ classroom.room_number }} - {{ getBuildingName(classroom.building_id) }} ({{ getCampusName(getBuildingCampusId(classroom.building_id)) }})
               </option>
             </select>
           </div>
@@ -216,10 +216,11 @@
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label class="form-label">Ngày cụ thể (tùy chọn)</label>
-                    <input 
-                      type="date" 
-                      v-model="form.specific_date" 
+                    <VueFlatpickr
+                      v-model="form.specific_date"
                       class="form-control"
+                      placeholder="DD/MM/YYYY"
+                      :config="flatpickrConfig"
                     />
                   </div>
                 </div>
@@ -271,8 +272,14 @@
 
 <script>
 import { scheduleAPI } from "@/utils/api";
+import VueFlatpickr from "vue-flatpickr-component";
+import "flatpickr/dist/flatpickr.css";
+import Vietnamese from 'flatpickr/dist/l10n/vn.js';
 
 export default {
+  components: {
+    VueFlatpickr
+  },
   data() {
     return {
       schedules: [],
@@ -304,7 +311,25 @@ export default {
       loading: false,
       processing: false,
       message: "",
-      messageType: "success"
+      messageType: "success",
+      flatpickrConfig: {
+        dateFormat: "Y-m-d",
+        locale: Vietnamese.vn,
+        allowInput: true,
+        altInput: true,
+        altFormat: "d/m/Y",
+        parseDate: (datestr, format) => {
+          // Xử lý khi người dùng nhập 8 số liên tiếp
+          if (/^\d{8}$/.test(datestr)) {
+            return new Date(
+              datestr.substr(4, 4) + '-' + 
+              datestr.substr(2, 2) + '-' + 
+              datestr.substr(0, 2)
+            );
+          }
+          return null; // Let flatpickr handle other formats
+        }
+      }
     };
   },
   computed: {
@@ -538,4 +563,3 @@ export default {
   overflow: hidden;
 }
 </style>
-  
