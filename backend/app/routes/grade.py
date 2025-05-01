@@ -4,7 +4,7 @@ from app.models.grade import Grade
 from app.models.student import Student
 from app.models.classs import Class
 from app.models.grade_type import GradeType
-from app.models.exam import Exam
+# from app.models.exam import Exam
 from app.utils.auth import auth_required, admin_required
 
 grade_bp = Blueprint('grade', __name__)

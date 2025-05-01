@@ -3,6 +3,7 @@ import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
 import StudentFeedback from '@/views/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
+import AdminFeedbackStats from '@/views/admin/FeedbackStats.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';
 import CampusManagement from '@/views/admin/CampusManagement.vue';
 import ScheduleManagement from '@/views/admin/ScheduleManagement.vue';
@@ -73,6 +74,15 @@ const routes = [
     path: '/admin/feedbacks',
     name: 'admin-feedback-management',
     component: AdminFeedbackManagement
+  },
+  {
+    path: '/admin/stats/feedback',
+    name: 'admin-feedback-stats',
+    component: AdminFeedbackStats,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
   },
   {
     path: '/admin/campuses',

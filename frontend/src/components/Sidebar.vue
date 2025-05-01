@@ -133,6 +133,9 @@
           <router-link to="/feedbacks" class="submenu-item" active-class="active">
             <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
           </router-link>
+          <router-link to="/admin/stats/feedback" class="submenu-item" active-class="active">
+            <i class="bi bi-bar-chart me-2"></i>Báo cáo và thống kê đánh giá
+          </router-link>
         </div>
         
         <!-- Quản lý chương trình học -->
@@ -227,7 +230,7 @@ const highlightActiveMenu = () => {
   // Mở menu phù hợp với route hiện tại
   if (path.includes('student-feedbacks')) {
     menuOpen.value.survey = true;
-  } else if (path.includes('feedbacks')) {
+  } else if (path.includes('feedbacks') || path.includes('admin/stats/feedback')) {
     menuOpen.value.management = true;
   } else if (path.includes('admin/students')) {
     menuOpen.value.users = true;
