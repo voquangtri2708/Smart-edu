@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.subject import Subject
+from app.utils.auth import auth_required, admin_required
 
 subject_bp = Blueprint('subject', __name__)
 
 @subject_bp.route('/subjects', methods=['POST'])
+@auth_required
+@admin_required
 def create_subject():
     data = request.get_json()
     new_subject = Subject(
@@ -18,17 +21,49 @@ def create_subject():
     return jsonify({"message": "Subject created successfully"}), 201
 
 @subject_bp.route('/subjects', methods=['GET'])
+@auth_required
 def get_subjects():
-    subjects = Subject.query.all()
-    return jsonify([{
-        "id": subject.id,
-        "code": subject.code,
-        "name": subject.name,
-        "credit": subject.credit,
-        "description": subject.description
-    } for subject in subjects])
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    search_query = request.args.get('query', '')
+    
+    # Limit per_page to prevent performance issues
+    if per_page > 100:
+        per_page = 100
+    
+    # Filter subjects based on search query
+    query = Subject.query
+    if search_query:
+        query = query.filter(
+            # Search by code or name
+            (Subject.code.ilike(f'%{search_query}%')) |
+            (Subject.name.ilike(f'%{search_query}%'))
+        )
+    
+    # Apply pagination to the filtered query
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    subjects = pagination.items
+    
+    return jsonify({
+        'items': [{
+            "id": subject.id,
+            "code": subject.code,
+            "name": subject.name,
+            "credit": subject.credit,
+            "description": subject.description
+        } for subject in subjects],
+        'pagination': {
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'page': page,
+            'per_page': per_page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
+        }
+    })
 
 @subject_bp.route('/subjects/<int:id>', methods=['GET'])
+@auth_required
 def get_subject(id):
     subject = Subject.query.get_or_404(id)
     return jsonify({
@@ -40,6 +75,8 @@ def get_subject(id):
     })
 
 @subject_bp.route('/subjects/<int:id>', methods=['PUT'])
+@auth_required
+@admin_required
 def update_subject(id):
     data = request.get_json()
     subject = Subject.query.get_or_404(id)
@@ -57,6 +94,8 @@ def update_subject(id):
     return jsonify({"message": "Subject updated successfully"})
 
 @subject_bp.route('/subjects/<int:id>', methods=['DELETE'])
+@auth_required
+@admin_required
 def delete_subject(id):
     subject = Subject.query.get_or_404(id)
     db.session.delete(subject)

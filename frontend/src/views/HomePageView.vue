@@ -1,19 +1,255 @@
 <template>
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6 offset-md-3">
-          <h1 class="text-center">Trang chủ</h1>
-          <p class="text-center">Chào mừng bạn đến với hệ thống quản lý học tập</p>
+  <div class="container py-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white">
+        <h3 class="mb-0"><i class="bi bi-book me-2"></i>Nội quy sử dụng hệ thống SMART-EDU</h3>
+      </div>
+      <div class="card-body">
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle-fill me-2"></i>
+              <strong>Chào mừng bạn đến với hệ thống quản lý giáo dục SMART-EDU!</strong> 
+              Vui lòng đọc kỹ nội quy sử dụng hệ thống để đảm bảo môi trường học tập hiệu quả và an toàn.
+            </div>
+          </div>
         </div>
-        <p>Những độc giả nước ngoài khi muốn tìm hiểu, đọc văn học Việt Nam thì hầu hết đều khá thất vọng bởi lượng tác phẩm văn học Việt Nam được dịch và giới thiệu trên thị trường sách quốc tế quá nghèo nàn. Họ chỉ có thể tìm thấy ở thư viện những cuốn sách về lịch sử, văn học thời cổ hoặc thời chiến tranh. Vô hình chung, nếu nhận xét hoặc có cái nhìn về văn học Việt Nam, độc giả thế giới chỉ có thể có được một số thông tin từ các tác phẩm của Nguyễn Du, Nguyễn Trãi, Hồ Xuân Hương, Nam Cao, Hồ Chí Minh, Tố Hữu, Chế Lan Viên, Huy Cận,… Sau này, một số tác phẩm viết về chiến tranh và đời sống trong chiến tranh, hậu chiến của các tác giả như Lê Minh Khuê, Bảo Ninh, Hữu Thỉnh, Nguyễn Huy Thiệp, Nguyễn Quang Thiều, Trần Đăng Khoa, Trần Nhuận Minh, Y Ban, Nhật ký Đặng Thùy Trâm… Tiếp đó, qua một số cầu nối cá nhân và tổ chức, mà điển hình là sự kiện Hội nghị quảng bá văn học Việt Nam được tổ chức 4 lần vừa qua, đã giúp một số tác giả được dịch giả nước ngoài biết đến và dịch tác phẩm của họ như Hồ Anh Thái, Nguyễn Ngọc Tư, Nguyễn Nhật Ánh, Dương Thụy, Mai Văn Phấn, Nguyễn Phan Quế Mai, DiLi, Trần Quang Đạo… Tất cả những tác phẩm, tác giả đã được dịch và giới thiệu ra nước ngoài, chưa thể đại diện được cho nền văn học đồ sộ của Việt Nam, và do đó, độc giả trên thế giới về cơ bản không có được cái nhìn tổng thể về tầm vóc văn học Việt Nam, càng chưa được thưởng thức sự đa dạng, phong phú và vẻ đẹp của văn học Việt. Đối với độc giả thế giới, văn học Việt Nam vẫn như là mảnh đất xa lạ. Tại sao chúng ta dịch văn học nước ngoài rất nhiều, mà nước ngoài lại được thưởng thức văn học Việt Nam rất ít? Đơn cử trong mảng văn học dịch giữa Việt Nam và Hungary, xét riêng về văn học đương đại, Việt Nam đã dịch và xuất bản tới 35 cuốn sách của Hungary, trong khi chỉ có 5 cuốn sách Việt Nam được dịch và xuất bản ở Hungary. Lý do có thể vì lượng du học sinh Việt Nam được chính phủ Hungary cấp học bổng nhiều hơn, họ được sống, học tập ở Hung, giỏi tiếng Hung nên chọn những tác phẩm hay của Hungary để dịch và giới thiệu về Việt Nam. Trong khi đó, lượng sinh viên Hungary được hỗ trợ học bổng để sang Việt Nam học quá ít, và không phải ai cũng sẵn sàng đọc tác phẩm Việt Nam và dành thời gian dịch sang tiếng Hungary nên có sự mất cân đối trong việc dịch tác phẩm giữa hai nước. Khu vực triển lãm sách của nhà văn Việt Nam tại Diễn đàn các nhà văn châu Á lần thứ Nhất 2019 tại Kazakhstan Dịch giả Nguyễn Hồng Nhung, trong một lần được đề nghị dịch tác phẩm Ma Văn Kháng sang tiếng Hungary, đã từ chối. Chị từng dịch tới mười cuốn sách, tác phẩm của nhà văn Hamvas Bela của Hungary sang tiếng Việt rất thành công, nhưng chị lại cho rằng nên để người Hungary dịch tác phẩm thì tốt hơn là người Việt tự dịch tác phẩm Việt sang tiếng Hungary. Trong một lần, tôi và nhà văn Xuân Đức đi dự “Diễn đàn nhà văn châu Á lần thứ nhất 2019” tại Kazakhstan, tôi chỉ kịp chuẩn bị một tập sách mỏng in 5 truyện ngắn và 19 bài thơ của mình bằng tiếng Anh để mang đi giao lưu với bạn văn châu Á. Nhà văn Xuân Đức chỉ kịp đưa dịch một truyện ngắn sang tiếng Anh để mang đi làm “dấn vốn” giao lưu. Quả thực là nghèo nàn. Trong khi đó, hỏi đến bạn văn nào trong số những đại biểu đi dự Diễn đàn, họ đều có ít nhất 5-7 cuốn sách được dịch ra các thứ tiếng như Anh, Pháp, Đức, Tây Ban Nha, Nga, Ý… Trong triển lãm sách tại Diễn đàn, chúng tôi chỉ có thể trưng bày trong gian của Việt Nam các tác phẩm đã dịch tiếng Anh hoặc Pháp, Nga của Chủ tịch Hồ Chí Minh, hợp tuyển thơ, hợp tuyển truyện ngắn do Hội Nhà văn Việt Nam tổ chức tuyển chọn và dịch sang tiếng Anh, một số sách của nhà thơ Mai Văn Phấn đã dịch tiếng Anh, Pháp, Nga. Nhà văn Xuân Đức khá buồn trong suốt cả sự kiện Diễn đàn này, vì rõ ràng rằng, trong nước, ông là một tiểu thuyết gia, kịch tác gia nổi tiếng, nhưng ra tới sân chơi khu vực châu Á, không ai biết đến tác phẩm của ông, không ai biết đến ông. Sau khi trở về Việt Nam, năm 2019 nhà văn Xuân Đức đã tự đầu tư 30 triệu đồng cho việc dịch tác phẩm “Người không mang họ” của ông sang tiếng Anh. Năm đó, dù tuổi đã khá cao, nhưng nhà văn Xuân Đức vẫn là một tên tuổi khá nóng trong làng viết kịch, viết văn, và ông có thu nhập khá từ nghề, nên dám mạnh dạn đầu tư dịch tác phẩm như vậy, coi như là một “tấm visa” để tự giới thiệu và bước ra khỏi biên giới. Nhưng còn nhiều nhà văn, nhà thơ Việt Nam khác, với thu nhập hạn chế, và còn chưa bao giờ bước ra các diễn đàn văn học nước ngoài, họ chẳng có nhu cầu dịch tác phẩm sang tiếng nước ngoài làm gì, nhất là lại còn phải tự thân vận động vất vả và tốn kém. Nếu mỗi cá nhân tự thân vận động trong việc dịch tác phẩm của chính mình ra tiếng nước ngoài, thì vấp phải khó khăn kể trên trong chi phí và quan hệ. Vậy các tổ chức thì sao? Hội nhà văn Việt Nam từng thành lập cả trung tâm dịch văn học, nhưng hoạt động còn hạn chế, số tác phẩm dịch cũng chỉ dừng lại ở mức đối ngoại và vài năm mới lại dịch một hợp tuyển văn, thơ để chuẩn bị cho sự kiện Hội nghị quảng bá văn học mà thôi. Một số dự án hợp tác quảng bá ra nước ngoài, thì các tác phẩm được chọn dịch lại thuộc hàng kinh điển, của các tác giả đã qua đời, hoặc về thời chiến, chứ chưa có được những tác phẩm đương đại được giới thiệu tương xứng. Tại các trường đại học Việt Nam, nơi có khoa ngôn ngữ, việc dịch tác phẩm văn học Việt Nam ra tiếng nước ngoài không được quan tâm, mà chủ yếu dịch tác phẩm nước ngoài sang tiếng Việt để sinh viên nghiên cứu. Nhà văn Malaysia Muhammad Haji Salleh chia sẻ, tại nước ông, hai chục năm nay đã thành lập Viện dịch văn học, được tài trợ bởi ngân sách nhà nước. Viện này ngoài việc dịch các tác phẩm kinh điển của quốc gia, thì thường chọn tác phẩm nổi tiếng đương đại, các tác phẩm đoạt giải nhất, nhì, ba trong các cuộc thi văn chương trong nước để dịch, quảng bá ra nước ngoài, đưa vào các sự kiện văn chương, đưa vào các thư viện của các nước trên thế giới, như một cách để khoe khéo sự giàu có tâm hồn người Malaysia, và còn là cách để phát triển trí tuệ các thế hệ tương lai. Cho dù cuộc sống có phát triển tới đâu đi chăng nữa, mà không chăm lo phát triển văn học, dịch văn học, xuất khẩu văn hóa qua con đường văn học, thì tâm hồn các thế hệ con cháu chúng ta hẳn sẽ nghèo đi, và đó là điều vô cùng khó cứu vãn. Hoặc đơn cử trường hợp của Đại sứ quán Hungary tại Việt Nam, mỗi năm đầu tư dịch ít nhất 3 cuốn sách Hungary sang tiếng Việt và phát hành tại Việt Nam. Họ chọn những dịch giả người Việt Nam đang sống, hoặc từng sống và làm việc tại Hungary, giỏi ngôn ngữ Hungary, hiểu văn hóa Hungary và đầu tư nhuận bút trước cho dịch giả: chừng 1000 USD/cuốn sách dịch. Do đó mà vừa qua có những cuốn: “Người Hungary, họ là ai”, “Say xỉn học toàn thư”, “Những ngôi sao Eger” đã được phát hành tại Việt Nam, và sắp tới sẽ còn có những cuốn mới được dịch sang tiếng Việt. Như vậy, để văn học Việt Nam có thể vượt qua biên giới, chúng ta không chỉ trông chờ vào Hội Nhà văn Việt Nam hay các cá nhân, mà còn phải học tập những cách làm khác nhau của các nước và rút ra những cách làm phù hợp nhất. Chúng ta thực cũng cần lắm một “nhạc trưởng” cho sự nghiệp dịch văn học nước nhà. Và “khu đất trống hoang hoải” này, liệu có thể trở thành “khu đất vàng” cho một chủ đầu tư tinh ý?</p>
+
+        <!-- Quy tắc chung -->
+        <div class="card mb-4 border-0 shadow-sm">
+          <div class="card-header bg-light d-flex align-items-center">
+            <i class="bi bi-shield-check me-2 text-primary fs-4"></i>
+            <h5 class="mb-0">Quy tắc chung</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <tbody>
+                  <tr>
+                    <td class="text-center" style="width: 50px"><i class="bi bi-check-circle text-success"></i></td>
+                    <td>Mỗi người dùng chỉ được sử dụng một tài khoản duy nhất do nhà trường cấp.</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center"><i class="bi bi-check-circle text-success"></i></td>
+                    <td>Bảo mật thông tin tài khoản, không chia sẻ mật khẩu với người khác.</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center"><i class="bi bi-check-circle text-success"></i></td>
+                    <td>Tuân thủ các quy định về đạo đức học tập và giao tiếp trên môi trường số.</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center"><i class="bi bi-check-circle text-success"></i></td>
+                    <td>Không sử dụng hệ thống vào mục đích phi giáo dục hoặc các hoạt động phi pháp.</td>
+                  </tr>
+                  <tr>
+                    <td class="text-center"><i class="bi bi-check-circle text-success"></i></td>
+                    <td>Thông báo ngay cho quản trị viên khi phát hiện lỗi bảo mật hoặc vấn đề kỹ thuật.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Quy định đối với sinh viên -->
+          <div class="col-lg-6">
+            <div class="card mb-4 border-0 shadow-sm h-100">
+              <div class="card-header bg-light d-flex align-items-center">
+                <i class="bi bi-mortarboard me-2 text-primary fs-4"></i>
+                <h5 class="mb-0">Đối với sinh viên</h5>
+              </div>
+              <div class="card-body">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Kiểm tra lịch học và thông báo thường xuyên trên hệ thống.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Tham gia đánh giá giảng viên và phòng học theo quy định của nhà trường.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Cập nhật thông tin cá nhân kịp thời khi có thay đổi.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Nộp bài tập đúng thời hạn và tuân thủ quy định về bản quyền.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Tham gia khảo sát và góp ý để cải thiện chất lượng đào tạo.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quy định đối với giảng viên -->
+          <div class="col-lg-6">
+            <div class="card mb-4 border-0 shadow-sm h-100">
+              <div class="card-header bg-light d-flex align-items-center">
+                <i class="bi bi-person-video3 me-2 text-primary fs-4"></i>
+                <h5 class="mb-0">Đối với giảng viên</h5>
+              </div>
+              <div class="card-body">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Cập nhật tài liệu giảng dạy và thông báo lớp học đúng hạn.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Đánh giá và chấm điểm sinh viên công bằng và minh bạch.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Phản hồi thắc mắc của sinh viên trong thời gian quy định.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Tuân thủ lịch giảng dạy và thông báo trước khi có thay đổi.</span>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <i class="bi bi-arrow-right-circle text-primary me-2 mt-1"></i>
+                    <span>Tham gia đánh giá và cải tiến chương trình đào tạo.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <!-- Quy định về sử dụng hệ thống -->
+          <div class="col-lg-6">
+            <div class="card mb-4 border-0 shadow-sm h-100">
+              <div class="card-header bg-light d-flex align-items-center">
+                <i class="bi bi-laptop me-2 text-primary fs-4"></i>
+                <h5 class="mb-0">Sử dụng hệ thống</h5>
+              </div>
+              <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                  <div class="bg-light rounded-circle p-2 me-3">
+                    <i class="bi bi-clock text-primary"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold">Thời gian truy cập</h6>
+                    <p class="mb-0">Hệ thống hoạt động 24/7, nhưng có thể bảo trì định kỳ vào ngày Chủ nhật (22:00-24:00).</p>
+                  </div>
+                </div>
+                
+                <div class="d-flex align-items-start mb-3">
+                  <div class="bg-light rounded-circle p-2 me-3">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold">Hành vi cấm</h6>
+                    <p class="mb-0">Nghiêm cấm tấn công, phá hoại hệ thống hoặc cố tình gây quá tải.</p>
+                  </div>
+                </div>
+                
+                <div class="d-flex align-items-start">
+                  <div class="bg-light rounded-circle p-2 me-3">
+                    <i class="bi bi-shield-lock text-primary"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold">Bảo mật</h6>
+                    <p class="mb-0">Đăng xuất khi không sử dụng và thay đổi mật khẩu định kỳ 3 tháng/lần.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Xử lý vi phạm -->
+          <div class="col-lg-6">
+            <div class="card mb-4 border-0 shadow-sm h-100">
+              <div class="card-header bg-light d-flex align-items-center">
+                <i class="bi bi-exclamation-diamond me-2 text-primary fs-4"></i>
+                <h5 class="mb-0">Xử lý vi phạm</h5>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-warning">
+                  <p class="fw-bold mb-2">Các hình thức xử lý vi phạm:</p>
+                  <ol class="mb-0">
+                    <li>Nhắc nhở, cảnh báo qua email</li>
+                    <li>Khóa tài khoản tạm thời (1-7 ngày)</li>
+                    <li>Khóa tài khoản vĩnh viễn</li>
+                    <li>Xử lý theo quy chế của nhà trường</li>
+                  </ol>
+                </div>
+                
+                <p class="text-muted fst-italic">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Mức độ xử lý sẽ tùy thuộc vào tính chất và mức độ nghiêm trọng của vi phạm.
+                </p>
+
+                <div class="d-flex align-items-center mt-3">
+                  <i class="bi bi-telephone-fill text-success me-2"></i>
+                  <span>Hỗ trợ kỹ thuật: <strong>support@smart-edu.vn</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cam kết tuân thủ -->
+        <div class="card border-0 bg-light mt-2">
+          <div class="card-body">
+            <p class="mb-0 text-center">
+              <i class="bi bi-check2-circle text-success me-2"></i>
+              <em>Việc sử dụng hệ thống SMART-EDU đồng nghĩa với việc bạn đã đọc, hiểu và đồng ý tuân thủ các quy định trên.</em>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
-  </template>
-  
-  <script setup>
+  </div>
+</template>
 
-  </script>
-  
-  <style scoped>
+<script setup>
+// Không cần logic đặc biệt cho trang này
+</script>
 
-  </style>
+<style scoped>
+.card-header {
+  border-bottom: none;
+}
+
+.card {
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.list-group-item {
+  border-left: none;
+  border-right: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.list-group-item:first-child {
+  border-top: none;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.rounded-circle {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
