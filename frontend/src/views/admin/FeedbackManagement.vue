@@ -444,9 +444,6 @@ const toastType = ref('success');
 const detailedFeedback = ref(null);
 const loadingDetail = ref(false);
 
-// Thêm biến để lưu trữ tất cả dữ liệu trước khi lọc
-const allFeedbacksData = ref([]);
-
 // Biến lưu trữ bộ lọc
 const filters = ref({
   feedbackType: 'all', // 'all', 'TEACHER', 'CLASSROOM'
@@ -459,7 +456,7 @@ const filters = ref({
 const currentPage = ref(1);
 const pageSize = ref(12);
 const totalItems = ref(0);
-const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value));
+const totalPages = ref(0);
 
 // Biến lưu trữ số lượng từng loại sentiment
 const positiveCount = ref(0);
@@ -472,31 +469,44 @@ const statisticsText = computed(() => {
 });
 
 // Hàm tính toán số lượng từng loại sentiment từ dữ liệu đầy đủ
-const calculateSentimentCounts = (data) => {
-  positiveCount.value = data.filter(f => f.sentiment === 'POSITIVE').length;
-  neutralCount.value = data.filter(f => f.sentiment === 'NEUTRAL').length;
-  negativeCount.value = data.filter(f => f.sentiment === 'NEGATIVE').length;
-};
-
-// Hàm tải toàn bộ dữ liệu để tính toán số lượng sentiment
-const fetchAllFeedbacks = async () => {
+const calculateSentimentCounts = async () => {
   try {
     // Lấy token xác thực
     const token = localStorage.getItem('auth_token');
     
-    // Lấy toàn bộ dữ liệu đánh giá từ API mới
+    // Gọi API riêng để lấy thống kê sentiment
+    const params = {};
+    if (filters.value.feedbackType !== 'all') {
+      params.feedback_type = filters.value.feedbackType;
+    }
+    
+    if (filters.value.timeFrame !== 'all') {
+      // Thời gian được xử lý trong frontend
+      params.time_frame = filters.value.timeFrame;
+    }
+    
+    if (filters.value.searchTerm) {
+      params.query = filters.value.searchTerm;
+    }
+    
+    // Gọi API không phân trang để lấy số lượng
     const response = await axios.get('http://localhost:5000/api/feedbacks', {
+      params: {
+        ...params,
+        per_page: 1000 // Lấy số lượng lớn để tính toán thống kê
+      },
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-    allFeedbacksData.value = response.data;
     
-    // Tính toán số lượng sentiment từ tất cả dữ liệu
-    calculateSentimentCounts(allFeedbacksData.value);
+    // Tính toán sentiment từ dữ liệu trả về
+    const allFeedbacks = response.data.items;
+    positiveCount.value = allFeedbacks.filter(f => f.sentiment === 'POSITIVE').length;
+    neutralCount.value = allFeedbacks.filter(f => f.sentiment === 'NEUTRAL').length;
+    negativeCount.value = allFeedbacks.filter(f => f.sentiment === 'NEGATIVE').length;
   } catch (error) {
-    console.error('Lỗi khi tải toàn bộ dữ liệu đánh giá:', error);
-    showToast('Không thể tải dữ liệu đánh giá', 'danger');
+    console.error('Lỗi khi tải dữ liệu thống kê:', error);
   }
 };
 
@@ -509,7 +519,10 @@ const fetchFeedbacks = async () => {
     const token = localStorage.getItem('auth_token');
     
     // Tạo object cho parameters
-    const params = {};
+    const params = {
+      page: currentPage.value,
+      per_page: pageSize.value
+    };
     
     // Thêm các tham số lọc vào params
     if (filters.value.feedbackType !== 'all') {
@@ -520,16 +533,26 @@ const fetchFeedbacks = async () => {
       params.sentiment = filters.value.sentiment;
     }
     
-    // Lấy dữ liệu từ API mới
+    // Xử lý tìm kiếm
+    if (filters.value.searchTerm) {
+      params.query = filters.value.searchTerm;
+    }
+    
+    // Lấy dữ liệu từ API mới với phân trang
     const response = await axios.get('http://localhost:5000/api/feedbacks', { 
       params,
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-    let allFeedbacks = response.data;
-
+    
+    // Cập nhật dữ liệu và thông tin phân trang
+    feedbacks.value = response.data.items;
+    totalItems.value = response.data.pagination.total;
+    totalPages.value = response.data.pagination.pages;
+    
     // Lọc theo thời gian nếu cần
+    // Vì thời gian không xử lý ở backend, nên vẫn phải lọc ở frontend
     if (filters.value.timeFrame !== 'all') {
       const now = new Date();
       let cutoffDate;
@@ -546,32 +569,13 @@ const fetchFeedbacks = async () => {
           break;
       }
       
-      allFeedbacks = allFeedbacks.filter(feedback => 
+      feedbacks.value = feedbacks.value.filter(feedback => 
         new Date(feedback.created_at) >= cutoffDate
       );
     }
-
-    // Lọc theo từ khóa tìm kiếm nếu có
-    if (filters.value.searchTerm) {
-      const searchTermLower = filters.value.searchTerm.toLowerCase();
-      allFeedbacks = allFeedbacks.filter(feedback => 
-        feedback.content?.toLowerCase().includes(searchTermLower) ||
-        feedback.student_id?.toLowerCase().includes(searchTermLower) ||
-        (feedback.teacher_id && feedback.teacher_id.toLowerCase().includes(searchTermLower))
-      );
-    }
-
-    // Sắp xếp từ mới đến cũ
-    allFeedbacks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    // Cập nhật tổng số item và danh sách hiển thị
-    totalItems.value = allFeedbacks.length;
     
-    // Tính vị trí bắt đầu và kết thúc cho trang hiện tại
-    const startIndex = (currentPage.value - 1) * pageSize.value;
-    const endIndex = Math.min(startIndex + pageSize.value, allFeedbacks.length);
-    
-    feedbacks.value = allFeedbacks.slice(startIndex, endIndex);
+    // Cập nhật số lượng sentiment
+    await calculateSentimentCounts();
     
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu đánh giá:', error);
@@ -596,7 +600,6 @@ const deleteFeedback = async () => {
       }
     });
     await fetchFeedbacks();
-    await fetchAllFeedbacks(); // Cập nhật lại số lượng sau khi xóa
     showToast('Đã xóa đánh giá thành công', 'success');
     deleteModal.value.hide();
   } catch (error) {
@@ -709,9 +712,6 @@ onMounted(async () => {
   // Khởi tạo Bootstrap Modal
   deleteModal.value = new Modal(document.getElementById('deleteModal'));
   detailModal.value = new Modal(document.getElementById('detailModal'));
-  
-  // Tải tất cả dữ liệu để tính toán số lượng sentiment
-  await fetchAllFeedbacks();
   
   // Tải dữ liệu đánh giá theo bộ lọc
   await fetchFeedbacks();

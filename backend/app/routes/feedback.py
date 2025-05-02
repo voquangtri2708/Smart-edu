@@ -172,6 +172,10 @@ def get_feedbacks():
     teacher_id = request.args.get('teacher_id')
     classroom_id = request.args.get('classroom_id')
     
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
     # Xây dựng truy vấn với các bộ lọc
     query = Feedback.query
     
@@ -200,8 +204,30 @@ def get_feedbacks():
     if classroom_id:
         query = query.filter_by(classroom_id=classroom_id)
     
-    # Thực hiện truy vấn và trả về kết quả
-    feedbacks = query.all()
+    # Apply search if provided
+    search_query = request.args.get('query')
+    if search_query:
+        search_term = f"%{search_query}%"
+        query = query.join(Teacher, Feedback.teacher_id == Teacher.id, isouter=True).filter(
+            db.or_(
+                Feedback.content.ilike(search_term),
+                Feedback.student_id.ilike(search_term),
+                db.and_(
+                    Feedback.feedback_type == 'TEACHER',
+                    db.or_(
+                        Teacher.id.ilike(search_term),
+                        db.func.concat(Teacher.last_name, ' ', Teacher.first_name).ilike(search_term)
+                    )
+                )
+            )
+        )
+    
+    # Sắp xếp từ mới đến cũ
+    query = query.order_by(Feedback.created_at.desc())
+    
+    # Apply pagination
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    feedbacks = pagination.items
     
     result = []
     for feedback in feedbacks:
@@ -241,7 +267,7 @@ def get_feedbacks():
                             if campus:
                                 classroom_info["campus_name"] = campus.name
 
-                # Lấy thông tin giảng viên
+        # Lấy thông tin giảng viên
         teacher_info = {}
         if feedback.teacher_id:
             teacher = Teacher.query.get(feedback.teacher_id)
@@ -270,7 +296,17 @@ def get_feedbacks():
             "created_at": feedback.created_at
         })
     
-    return jsonify(result)
+    return jsonify({
+        'items': result,
+        'pagination': {
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'page': page,
+            'per_page': per_page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
+        }
+    })
 
 @feedback_bp.route('/feedbacks/<int:id>', methods=['GET'])
 @auth_required
