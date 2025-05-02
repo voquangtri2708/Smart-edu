@@ -4,11 +4,16 @@ from app.models.feedback import Feedback
 from app.models.classs import Class
 from app.models.class_student import ClassStudent
 from app.models.class_teacher import ClassTeacher
+from app.models.subject import Subject
 from app.ml.pred import prediction
 from app.utils.auth import auth_required, admin_required, student_self_or_admin_required
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 import logging
+from app.models.classroom import Classroom
+from app.models.building import Building
+from app.models.campus import Campus
+from app.models.teacher import Teacher
 
 feedback_bp = Blueprint('feedback', __name__)
 
@@ -197,19 +202,75 @@ def get_feedbacks():
     
     # Thực hiện truy vấn và trả về kết quả
     feedbacks = query.all()
-    return jsonify([{
-        "id": feedback.id,
-        "content": feedback.content,
-        "student_id": feedback.student_id,
-        "class_id": feedback.class_id,
-        "teacher_id": feedback.teacher_id,
-        "classroom_id": feedback.classroom_id,
-        "start_date": feedback.start_date.strftime('%Y-%m-%d') if feedback.start_date else None,
-        "end_date": feedback.end_date.strftime('%Y-%m-%d') if feedback.end_date else None,
-        "sentiment": feedback.sentiment,
-        "feedback_type": feedback.feedback_type,
-        "created_at": feedback.created_at
-    } for feedback in feedbacks])
+    
+    result = []
+    for feedback in feedbacks:
+        # Lấy thông tin về lớp học
+        class_info = {}
+        if feedback.class_id:
+            class_ = Class.query.get(feedback.class_id)
+            if class_:
+                class_info = {
+                    "class_code": class_.code,
+                    "subject_name": None
+                }
+                # Lấy thông tin về môn học nếu có
+                if class_.subject_id:
+                    subject = Subject.query.get(class_.subject_id)
+                    if subject:
+                        class_info["subject_name"] = subject.name
+
+        # Lấy thông tin về phòng học
+        classroom_info = {}
+        if feedback.classroom_id:
+            classroom = Classroom.query.get(feedback.classroom_id)
+            if classroom:
+                classroom_info = {
+                    "room_number": classroom.room_number,
+                    "building_name": None,
+                    "campus_name": None
+                }
+                # Lấy tên tòa nhà
+                if classroom.building_id:
+                    building = Building.query.get(classroom.building_id)
+                    if building:
+                        classroom_info["building_name"] = building.name
+                        # Lấy tên cơ sở
+                        if building.campus_id:
+                            campus = Campus.query.get(building.campus_id)
+                            if campus:
+                                classroom_info["campus_name"] = campus.name
+
+                # Lấy thông tin giảng viên
+        teacher_info = {}
+        if feedback.teacher_id:
+            teacher = Teacher.query.get(feedback.teacher_id)
+            if teacher:
+                teacher_info = {
+                    "id": teacher.id,
+                    "name": teacher.last_name + " " + teacher.first_name
+                }
+
+
+        
+        result.append({
+            "id": feedback.id,
+            "content": feedback.content,
+            "student_id": feedback.student_id,
+            "class_id": feedback.class_id,
+            "class_info": class_info,
+            "classroom_info": classroom_info,
+            "teacher_id": feedback.teacher_id,
+            "teacher_info": teacher_info,
+            "classroom_id": feedback.classroom_id,
+            "start_date": feedback.start_date.strftime('%Y-%m-%d') if feedback.start_date else None,
+            "end_date": feedback.end_date.strftime('%Y-%m-%d') if feedback.end_date else None,
+            "sentiment": feedback.sentiment,
+            "feedback_type": feedback.feedback_type,
+            "created_at": feedback.created_at
+        })
+    
+    return jsonify(result)
 
 @feedback_bp.route('/feedbacks/<int:id>', methods=['GET'])
 @auth_required
@@ -226,12 +287,62 @@ def get_feedback(id):
         elif g.role not in ['student', 'teacher', 'admin']:
             return jsonify({"message": "Không có quyền truy cập"}), 403
     
+    # Lấy thông tin về lớp học
+    class_info = {}
+    if feedback.class_id:
+        class_ = Class.query.get(feedback.class_id)
+        if class_:
+            class_info = {
+                "class_code": class_.code,
+                "subject_name": None
+            }
+            # Lấy thông tin về môn học nếu có
+            if class_.subject_id:
+                subject = Subject.query.get(class_.subject_id)
+                if subject:
+                    class_info["subject_name"] = subject.name
+
+    # Lấy thông tin về phòng học
+    classroom_info = {}
+    if feedback.classroom_id:
+        classroom = Classroom.query.get(feedback.classroom_id)
+        if classroom:
+            classroom_info = {
+                "room_number": classroom.room_number,
+                "building_name": None,
+                "campus_name": None
+            }
+            # Lấy tên tòa nhà
+            if classroom.building_id:
+                building = Building.query.get(classroom.building_id)
+                if building:
+                    classroom_info["building_name"] = building.name
+                    # Lấy tên cơ sở
+                    if building.campus_id:
+                        campus = Campus.query.get(building.campus_id)
+                        if campus:
+                            classroom_info["campus_name"] = campus.name
+
+    # Lấy thông tin giảng viên
+    teacher_info = {}
+    if feedback.teacher_id:
+        teacher = Teacher.query.get(feedback.teacher_id)
+        if teacher:
+            teacher_info = {
+                "id": teacher.id,
+                "name": teacher.last_name + " " + teacher.first_name
+            }
+    
+    
     return jsonify({
         "id": feedback.id,
         "content": feedback.content,
         "student_id": feedback.student_id,
         "class_id": feedback.class_id,
+        "class_info": class_info,
+        "classroom_info": classroom_info,
         "teacher_id": feedback.teacher_id,
+        "teacher_info": teacher_info,
         "classroom_id": feedback.classroom_id,
         "start_date": feedback.start_date.strftime('%Y-%m-%d') if feedback.start_date else None,
         "end_date": feedback.end_date.strftime('%Y-%m-%d') if feedback.end_date else None,

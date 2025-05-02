@@ -130,6 +130,8 @@
                         'border-start border-5 border-secondary': feedback.sentiment === 'NEUTRAL',
                         'border-start border-5 border-danger': feedback.sentiment === 'NEGATIVE'
                       }"
+                      @click="showFeedbackDetail(feedback.id)"
+                      style="cursor: pointer;"
                     >
                       <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
@@ -161,17 +163,24 @@
                             <strong>Thời gian:</strong> {{ formatDate(feedback.created_at) }}
                           </p>
                           <p class="card-text mb-1">
-                            <strong>Mã lớp:</strong> {{ feedback.class_id }}
+                            <strong>Lớp học: </strong> 
+                            <span v-if="feedback.class_info">
+                              {{ feedback.class_info.class_code }} - {{ feedback.class_info.subject_name || 'Không có tên môn học' }}
+                            </span>
+                            <span v-else>{{ feedback.class_id }}</span>
                           </p>
                           <p class="card-text mb-1">
                             <strong>Mã sinh viên:</strong> {{ feedback.student_id }}
                           </p>
                           <p v-if="feedback.teacher_id" class="card-text mb-1">
-                            <strong>Mã giảng viên:</strong> {{ feedback.teacher_id }}
+                            <strong>Giảng viên:</strong> {{ feedback.teacher_info.name }} - {{ feedback.teacher_info.id }}
                           </p>
-                          <p v-if="feedback.classroom_id" class="card-text mb-1">
-                            <strong>Mã phòng học:</strong> {{ feedback.classroom_id }}
-                          </p>
+                          <p class="card-text mb-1">
+                            <strong v-if="feedback.classroom_id">Phòng học: </strong> 
+                            <span v-if="feedback.classroom_id">
+                              {{ feedback.classroom_info.room_number }} - {{ feedback.classroom_info.building_name }} - {{ feedback.classroom_info.campus_name }}
+                            </span>
+                        </p>
                         </div>
                         
                         <div class="mb-3 feedback-content">
@@ -264,6 +273,135 @@
       </div>
     </div>
 
+    <!-- Modal chi tiết đánh giá -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header" 
+            :class="{
+              'bg-success text-white': detailedFeedback?.sentiment === 'POSITIVE',
+              'bg-secondary text-white': detailedFeedback?.sentiment === 'NEUTRAL',
+              'bg-danger text-white': detailedFeedback?.sentiment === 'NEGATIVE'
+            }">
+            <h5 class="modal-title">Chi tiết đánh giá</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="loadingDetail" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+              <p class="mt-2">Đang tải thông tin chi tiết...</p>
+            </div>
+            
+            <div v-else-if="detailedFeedback" class="p-2">
+              <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge me-2" 
+                    :class="{
+                      'bg-success': detailedFeedback.sentiment === 'POSITIVE',
+                      'bg-secondary': detailedFeedback.sentiment === 'NEUTRAL',
+                      'bg-danger': detailedFeedback.sentiment === 'NEGATIVE'
+                    }"
+                    style="font-size: 0.9rem; padding: 8px;"
+                  >
+                    {{ formatSentiment(detailedFeedback.sentiment) }}
+                  </span>
+                  <h5 class="mb-0">
+                    <i class="bi me-2" 
+                      :class="{
+                        'bi-person-video3 text-primary': detailedFeedback.feedback_type === 'TEACHER',
+                        'bi-building text-success': detailedFeedback.feedback_type === 'CLASSROOM'
+                      }"
+                    ></i>
+                    {{ detailedFeedback.feedback_type === 'TEACHER' ? 'Đánh giá giảng viên' : 'Đánh giá phòng học' }}
+                  </h5>
+                </div>
+                
+                <div class="card bg-light">
+                  <div class="card-body py-3">
+                    <h6 class="fw-bold mb-2">Nội dung đánh giá:</h6>
+                    <p class="mb-0">{{ detailedFeedback.content }}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="fw-bold border-bottom pb-2 mb-3">Thông tin chung</h6>
+                  <p class="mb-2">
+                    <strong>Thời gian tạo:</strong> {{ formatDate(detailedFeedback.created_at) }}
+                  </p>
+                  <p class="mb-2">
+                    <strong>Mã sinh viên:</strong> {{ detailedFeedback.student_id }}
+                  </p>
+                </div>
+                
+                <div class="col-md-6">
+                  <h6 class="fw-bold border-bottom pb-2 mb-3">Thông tin lớp học</h6>
+                  <p class="mb-2" v-if="detailedFeedback.class_info">
+                    <strong>Mã lớp:</strong> {{ detailedFeedback.class_info.class_code }}
+                  </p>
+                  <p class="mb-2" v-if="detailedFeedback.class_info && detailedFeedback.class_info.subject_name">
+                    <strong>Tên môn học:</strong> {{ detailedFeedback.class_info.subject_name }}
+                  </p>
+                  <p class="mb-2">
+                    <strong>Thời gian đánh giá:</strong> {{ formatDate(detailedFeedback.start_date) }} đến {{ formatDate(detailedFeedback.end_date) }}
+                  </p>
+                </div>
+              </div>
+              
+              <div class="row mt-3" v-if="detailedFeedback.feedback_type === 'TEACHER' && detailedFeedback.teacher_info">
+                <div class="col-12">
+                  <h6 class="fw-bold border-bottom pb-2 mb-3">Thông tin giảng viên</h6>
+                  <p class="mb-2">
+                    <strong>Mã giảng viên:</strong> {{ detailedFeedback.teacher_id }}
+                  </p>
+                  <p class="mb-2">
+                    <strong>Tên giảng viên:</strong> {{ detailedFeedback.teacher_info.name }}
+                  </p>
+                </div>
+              </div>
+              
+              <div class="row mt-3" v-if="detailedFeedback.feedback_type === 'CLASSROOM' && detailedFeedback.classroom_info">
+                <div class="col-12">
+                  <h6 class="fw-bold border-bottom pb-2 mb-3">Thông tin phòng học</h6>
+                  <p class="mb-2">
+                    <strong>Mã phòng:</strong> {{ detailedFeedback.classroom_id }}
+                  </p>
+                  <p class="mb-2">
+                    <strong>Số phòng:</strong> {{ detailedFeedback.classroom_info.room_number }}
+                  </p>
+                  <p class="mb-2" v-if="detailedFeedback.classroom_info.building_name">
+                    <strong>Tòa nhà:</strong> {{ detailedFeedback.classroom_info.building_name }}
+                  </p>
+                  <p class="mb-2" v-if="detailedFeedback.classroom_info.campus_name">
+                    <strong>Cơ sở:</strong> {{ detailedFeedback.classroom_info.campus_name }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle me-2"></i> 
+              Không thể tải thông tin chi tiết của đánh giá
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            <button 
+              type="button" 
+              class="btn btn-danger" 
+              @click="confirmDelete(detailedFeedback)"
+              v-if="detailedFeedback"
+            >
+              <i class="bi bi-trash me-1"></i> Xóa đánh giá
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast notification -->
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
       <div 
@@ -297,9 +435,14 @@ const loading = ref(true);
 const activeTab = ref('all');
 const selectedFeedback = ref(null);
 const deleteModal = ref(null);
+const detailModal = ref(null);
 const toast = ref(null);
 const toastMessage = ref('');
 const toastType = ref('success');
+
+// Biến lưu trữ chi tiết đánh giá
+const detailedFeedback = ref(null);
+const loadingDetail = ref(false);
 
 // Thêm biến để lưu trữ tất cả dữ liệu trước khi lọc
 const allFeedbacksData = ref([]);
@@ -533,10 +676,39 @@ const formatDate = (dateString) => {
   });
 };
 
+// Hàm hiển thị chi tiết đánh giá
+const showFeedbackDetail = async (id) => {
+  loadingDetail.value = true;
+  detailedFeedback.value = null;
+  
+  // Hiển thị modal
+  detailModal.value.show();
+  
+  try {
+    // Lấy token xác thực
+    const token = localStorage.getItem('auth_token');
+    
+    // Lấy chi tiết đánh giá từ API
+    const response = await axios.get(`http://localhost:5000/api/feedbacks/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    detailedFeedback.value = response.data;
+  } catch (error) {
+    console.error('Lỗi khi tải chi tiết đánh giá:', error);
+    showToast('Không thể tải chi tiết đánh giá', 'danger');
+  } finally {
+    loadingDetail.value = false;
+  }
+};
+
 // Khởi tạo các component khi mounted
 onMounted(async () => {
   // Khởi tạo Bootstrap Modal
   deleteModal.value = new Modal(document.getElementById('deleteModal'));
+  detailModal.value = new Modal(document.getElementById('detailModal'));
   
   // Tải tất cả dữ liệu để tính toán số lượng sentiment
   await fetchAllFeedbacks();
