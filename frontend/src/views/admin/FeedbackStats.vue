@@ -6,6 +6,9 @@
           <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h4 class="mb-0">Báo cáo và thống kê đánh giá của sinh viên</h4>
             <div>
+              <button @click="openReportModal" class="btn btn-light btn-sm me-2">
+                <i class="bi bi-file-earmark-text me-1"></i> Tạo báo cáo
+              </button>
               <button @click="forceRenderCharts" class="btn btn-light btn-sm me-2">
                 <i class="bi bi-arrow-clockwise me-1"></i> Cập nhật biểu đồ
               </button>
@@ -315,6 +318,65 @@
       </div>
     </div>
   </div>
+
+  <!-- Report Modal -->
+  <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Tạo báo cáo phản hồi</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Date selection form -->
+          <div v-if="!generatingReport && !reportData">
+            <p class="mb-3">Chọn khoảng thời gian để tạo báo cáo phản hồi:</p>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Ngày bắt đầu</label>
+                <input type="date" class="form-control" v-model="reportDates.startDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Ngày kết thúc</label>
+                <input type="date" class="form-control" v-model="reportDates.endDate">
+              </div>
+            </div>
+            <div class="text-danger mt-2" v-if="reportError">{{ reportError }}</div>
+          </div>
+          
+          <!-- Loading indicator -->
+          <div v-if="generatingReport" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Đang tạo báo cáo...</span>
+            </div>
+            <p class="mt-3">Đang tạo báo cáo từ phản hồi của sinh viên...</p>
+            <p class="small text-muted">Quá trình này có thể mất vài phút, vui lòng đợi.</p>
+          </div>
+          
+          <!-- Report result -->
+          <div v-if="reportData && !generatingReport" class="report-container">
+            <div class="d-flex justify-content-between mb-3">
+              <h5>Báo cáo phản hồi {{ reportData.period }}</h5>
+              <button @click="downloadReportAsPDF" class="btn btn-sm btn-success">
+                <i class="bi bi-download me-1"></i> Tải PDF
+              </button>
+            </div>
+            <div id="reportContent" class="report-content border p-3 bg-light">
+              <div v-html="formatReportContent(reportData.report)"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button v-if="!reportData && !generatingReport" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button v-if="!reportData && !generatingReport" type="button" class="btn btn-primary" @click="generateReport">
+            <i class="bi bi-file-earmark-text me-1"></i> Tạo báo cáo
+          </button>
+          <button v-if="reportData && !generatingReport" type="button" class="btn btn-secondary" @click="resetReportModal">Tạo báo cáo mới</button>
+          <button v-if="reportData && !generatingReport" type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -332,8 +394,10 @@ import {
   ArcElement 
 } from 'chart.js';
 import axios from 'axios';
+import { Modal } from 'bootstrap';
+import html2pdf from 'html2pdf.js';
 
-// Register Chart components
+// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -783,6 +847,17 @@ export default {
       window.addEventListener('resize', () => {
         updateCharts();
       });
+      
+      // Initialize report modal
+      reportModal.value = new Modal(document.getElementById('reportModal'));
+      
+      // Set default date range (last 30 days)
+      const today = new Date();
+      const lastMonth = new Date();
+      lastMonth.setDate(today.getDate() - 30);
+      
+      reportDates.value.endDate = today.toISOString().split('T')[0];
+      reportDates.value.startDate = lastMonth.toISOString().split('T')[0];
     });
     
     // Clean up event listener on unmount
@@ -821,6 +896,116 @@ export default {
       });
     };
     
+    // Open report modal
+    const openReportModal = () => {
+      reportModal.value.show();
+    };
+
+    // Add these variables to manage the report generation
+    const reportModal = ref(null);
+    const reportDates = ref({
+      startDate: '',
+      endDate: ''
+    });
+    const reportError = ref('');
+    const generatingReport = ref(false);
+    const reportData = ref(null);
+
+    // Generate report
+    const generateReport = async () => {
+      // Validate date inputs
+      if (!reportDates.value.startDate || !reportDates.value.endDate) {
+        reportError.value = "Vui lòng chọn cả ngày bắt đầu và ngày kết thúc";
+        return;
+      }
+      
+      const startDate = new Date(reportDates.value.startDate);
+      const endDate = new Date(reportDates.value.endDate);
+      
+      if (startDate > endDate) {
+        reportError.value = "Ngày bắt đầu không thể sau ngày kết thúc";
+        return;
+      }
+      
+      // Clear previous error
+      reportError.value = '';
+      generatingReport.value = true;
+      
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await axios.post('http://localhost:5000/api/feedbacks/generate-report', {
+          start_date: reportDates.value.startDate,
+          end_date: reportDates.value.endDate
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        reportData.value = response.data;
+      } catch (error) {
+        console.error('Error generating report:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          reportError.value = error.response.data.message;
+        } else {
+          reportError.value = "Không thể tạo báo cáo. Vui lòng thử lại sau.";
+        }
+      } finally {
+        generatingReport.value = false;
+      }
+    };
+
+    // Reset report modal
+    const resetReportModal = () => {
+      reportData.value = null;
+      reportError.value = '';
+      
+      // Set default date range (last 30 days)
+      const today = new Date();
+      const lastMonth = new Date();
+      lastMonth.setDate(today.getDate() - 30);
+      
+      reportDates.value.endDate = today.toISOString().split('T')[0];
+      reportDates.value.startDate = lastMonth.toISOString().split('T')[0];
+    };
+
+    // Format report content with HTML
+    const formatReportContent = (content) => {
+      if (!content) return '';
+      
+      // Replace Markdown headings with HTML headings
+      let formattedContent = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+        .replace(/\n\n/g, '<br><br>') // Line breaks
+        .replace(/\n/g, '<br>') // Line breaks
+        .replace(/---/g, '<hr>') // Horizontal rule
+        
+        // Replace emoji headers
+        .replace(/📅/g, '<span class="report-emoji">📅</span>')
+        .replace(/📊/g, '<span class="report-emoji">📊</span>')
+        .replace(/📝/g, '<span class="report-emoji">📝</span>')
+        .replace(/💡/g, '<span class="report-emoji">💡</span>');
+      
+      return formattedContent;
+    };
+
+    // Download report as PDF
+    const downloadReportAsPDF = () => {
+      const content = document.getElementById('reportContent');
+      
+      if (!content) return;
+      
+      const options = {
+        margin: 10,
+        filename: `báo_cáo_phản_hồi_${reportDates.value.startDate}_${reportDates.value.endDate}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().from(content).set(options).save();
+    };
+
     return {
       loading,
       stats,
@@ -838,6 +1023,16 @@ export default {
       forceRenderCharts,
       resetFilters,
       calculatePercentage,
+      openReportModal,
+      reportModal,
+      reportDates,
+      reportError,
+      generatingReport,
+      reportData,
+      resetReportModal,
+      formatReportContent,
+      downloadReportAsPDF,
+      generateReport
     };
   }
 };
@@ -913,5 +1108,31 @@ canvas {
 
 th:not(.sortable) {
   cursor: default;
+}
+
+.report-container {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.report-content {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.report-emoji {
+  font-size: 1.5rem;
+  margin-right: 10px;
+}
+
+/* Custom styles for the printed report */
+@media print {
+  .report-content {
+    font-size: 12pt;
+  }
+  
+  .report-emoji {
+    font-size: 14pt;
+  }
 }
 </style> 
