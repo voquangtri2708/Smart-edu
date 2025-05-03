@@ -204,6 +204,27 @@
                               return new Date(`${year}-${month}-${day}`);
                             }
                             return flatpickr.parseDate(datestr, format);
+                          },
+                          onKeyDown: (selectedDates, dateStr, instance, event) => {
+                            // Chỉ cho phép nhập số và một số phím điều khiển
+                            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
+                            const key = event.key;
+                            
+                            if (!allowedKeys.includes(key) && isNaN(parseInt(key))) {
+                              event.preventDefault();
+                              return false;
+                            }
+                            
+                            // Nếu đã có 8 số và đang cố nhập thêm số khác
+                            const input = instance.altInput || instance.input;
+                            const digitCount = (input.value.match(/\d/g) || []).length;
+                            
+                            if (digitCount >= 8 && !isNaN(parseInt(key)) && 
+                                !event.ctrlKey && !event.metaKey && 
+                                input.selectionStart === input.selectionEnd) {
+                              event.preventDefault();
+                              return false;
+                            }
                           }
                         }"
                         required

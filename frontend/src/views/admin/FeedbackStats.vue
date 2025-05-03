@@ -333,12 +333,24 @@
             <p class="mb-3">Chọn khoảng thời gian để tạo báo cáo phản hồi:</p>
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label">Ngày bắt đầu</label>
-                <input type="date" class="form-control" v-model="reportDates.startDate">
+                <label class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                <VueFlatpickr
+                  v-model="reportDates.startDate"
+                  class="form-control"
+                  placeholder="DD/MM/YYYY"
+                  :config="flatpickrConfig"
+                  required
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label">Ngày kết thúc</label>
-                <input type="date" class="form-control" v-model="reportDates.endDate">
+                <label class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                <VueFlatpickr
+                  v-model="reportDates.endDate"
+                  class="form-control"
+                  placeholder="DD/MM/YYYY"
+                  :config="flatpickrConfig"
+                  required
+                />
               </div>
             </div>
             <div class="text-danger mt-2" v-if="reportError">{{ reportError }}</div>
@@ -396,6 +408,9 @@ import {
 import axios from 'axios';
 import { Modal } from 'bootstrap';
 import html2pdf from 'html2pdf.js';
+import VueFlatpickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
+import Vietnamese from 'flatpickr/dist/l10n/vn.js';
 
 // Register Chart.js components
 ChartJS.register(
@@ -411,6 +426,10 @@ ChartJS.register(
 
 export default {
   name: 'FeedbackStats',
+  
+  components: {
+    VueFlatpickr
+  },
   
   setup() {
     // Khởi tạo biến
@@ -468,7 +487,6 @@ export default {
         if (filters.value.month) params.month = filters.value.month;
         if (filters.value.quarter) params.quarter = filters.value.quarter;
         
-        console.log('Fetching stats with params:', params);
         const response = await axios.get('http://localhost:5000/api/admin/stats/feedback', {
           params,
           headers: {
@@ -545,7 +563,6 @@ export default {
         }
         // Reset về trang 1 khi thay đổi cách sắp xếp
         teacherCurrentPage.value = 1;
-        console.log('Teacher sort:', teacherSortField.value, teacherSortDirection.value);
       } else {
         // Kiểm tra có đang ở chế độ lọc "Tất cả đánh giá" không
         if (classroomSentimentFilter.value === 'all') {
@@ -560,7 +577,6 @@ export default {
           classroomSortDirection.value = 'desc';
         }
         classroomCurrentPage.value = 1;
-        console.log('Classroom sort:', classroomSortField.value, classroomSortDirection.value);
       }
     };
     
@@ -582,7 +598,6 @@ export default {
       }
       filters.value.prevMonth = filters.value.month;
       
-      console.log('Applying filters:', filters.value);
       fetchStats();
     };
     
@@ -599,7 +614,6 @@ export default {
     
     // Update Charts function
     const updateCharts = () => {
-      console.log('Updating charts with data:', stats.value);
       
       // Ensure the charts are updated after the DOM is ready
       nextTick(async () => {
@@ -642,10 +656,9 @@ export default {
       
       try {
         // Log canvas size
-        console.log('Type chart canvas size before getContext:', 
           typeChart.value.clientWidth, 
           typeChart.value.clientHeight
-        );
+        ;
         
         const ctx = typeChart.value.getContext('2d');
         if (!ctx) {
@@ -653,12 +666,9 @@ export default {
           return;
         }
         
-        console.log('Creating type chart with data:', stats.value.feedback_by_type);
         
         // Get parent div size
-        const parentDiv = typeChart.value.parentElement;
-        console.log('Parent div size:', parentDiv.clientWidth, parentDiv.clientHeight);
-        
+        const parentDiv = typeChart.value.parentElement;        
         // Set explicit dimensions on canvas
         typeChart.value.style.width = '100%';
         typeChart.value.style.height = '100%';
@@ -704,7 +714,6 @@ export default {
             }
           }
         });
-        console.log('Type chart created successfully');
       } catch (error) {
         console.error('Error creating type chart:', error);
       }
@@ -723,9 +732,7 @@ export default {
           console.error('Failed to get 2d context for sentiment chart');
           return;
         }
-        
-        console.log('Creating sentiment chart with data:', stats.value.feedback_by_sentiment);
-        
+                
         sentimentChartInstance = new Chart(ctx, {
           type: 'doughnut',
           data: {
@@ -770,7 +777,6 @@ export default {
             }
           }
         });
-        console.log('Sentiment chart created successfully');
       } catch (error) {
         console.error('Error creating sentiment chart:', error);
       }
@@ -789,9 +795,7 @@ export default {
           console.error('Failed to get 2d context for time series chart');
           return;
         }
-        
-        console.log('Creating time series chart with data:', stats.value.time_series_data);
-        
+                
         timeSeriesChartInstance = new Chart(ctx, {
           type: 'line',
           data: {
@@ -832,7 +836,6 @@ export default {
             }
           }
         });
-        console.log('Time series chart created successfully');
       } catch (error) {
         console.error('Error creating time series chart:', error);
       }
@@ -840,7 +843,6 @@ export default {
     
     // Initialize on component mount
     onMounted(async () => {
-      console.log('Component mounted, fetching data...');
       await fetchStats();
       
       // Add window resize event listener
@@ -866,7 +868,7 @@ export default {
       
       // Clean up chart instances
       if (typeChartInstance) typeChartInstance.destroy();
-      if (sentimentChartInstance) sentimentChartInstance.destroy();
+      if (sentimentChartInstance) typeChartInstance.destroy();
       if (timeSeriesChartInstance) timeSeriesChartInstance.destroy();
     });
     
@@ -877,7 +879,6 @@ export default {
     
     // Force render charts
     const forceRenderCharts = () => {
-      console.log('Force rendering charts');
       // Wait for next tick before updating charts
       nextTick(() => {
         // Force update chart parent divs
@@ -1006,6 +1007,25 @@ export default {
       html2pdf().from(content).set(options).save();
     };
 
+    // Flatpickr configuration
+    const flatpickrConfig = {
+      dateFormat: 'Y-m-d',
+      locale: Vietnamese.vn,
+      allowInput: true,
+      altFormat: 'd/m/Y',
+      altInput: true,
+      parseDate: (datestr, format) => {
+        // Xử lý khi người dùng nhập 8 số liên tiếp
+        if (/^\d{8}$/.test(datestr)) {
+          const day = datestr.substring(0, 2);
+          const month = datestr.substring(2, 4);
+          const year = datestr.substring(4, 8);
+          return new Date(`${year}-${month}-${day}`);
+        }
+        return flatpickr.parseDate(datestr, format);
+      }
+    };
+
     return {
       loading,
       stats,
@@ -1032,7 +1052,8 @@ export default {
       resetReportModal,
       formatReportContent,
       downloadReportAsPDF,
-      generateReport
+      generateReport,
+      flatpickrConfig
     };
   }
 };
@@ -1135,4 +1156,4 @@ th:not(.sortable) {
     font-size: 14pt;
   }
 }
-</style> 
+</style>
