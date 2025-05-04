@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.account import Account
+from app.models.student import Student
+from app.models.teacher import Teacher
 from app.utils.auth import auth_required, admin_required, role_or_self_required
 import jwt
 import os
@@ -135,3 +137,106 @@ def delete_account(id):
     db.session.delete(account)
     db.session.commit()
     return jsonify({"message": "Account deleted successfully"})
+
+@account_bp.route('/profile', methods=['OPTIONS'])
+def handle_profile_options():
+    resp = jsonify({'success': True})
+    # Thêm CORS headers
+    resp.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, PUT, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    resp.headers['Access-Control-Max-Age'] = '3600'
+    return resp, 200
+
+# New endpoint for getting user profile based on role
+@account_bp.route('/profile', methods=['GET'])
+@auth_required
+def get_profile():
+    """
+    Get profile information of currently logged in user.
+    Returns student or teacher information based on the user's role.
+    """
+    if g.role == 'student' and g.student_id:
+        # Get student profile
+        student = Student.query.get_or_404(g.student_id)
+        return jsonify({
+            "id": student.id,
+            "identity_number": student.identity_number,
+            "email": student.email,
+            "phone_number": student.phone_number,
+            "first_name": student.first_name,
+            "last_name": student.last_name,
+            "birthday": student.birthday.strftime('%d/%m/%Y') if student.birthday else None,
+            "address": student.address,
+            "avatar_url": student.avatar_url,
+            "gender": student.gender,
+            "face_encoding": student.face_encoding is not None
+        })
+    elif g.role == 'teacher' and g.teacher_id:
+        # Get teacher profile
+        teacher = Teacher.query.get_or_404(g.teacher_id)
+        return jsonify({
+            "id": teacher.id,
+            "identity_number": teacher.identity_number,
+            "email": teacher.email,
+            "phone_number": teacher.phone_number,
+            "first_name": teacher.first_name,
+            "last_name": teacher.last_name,
+            "birthday": teacher.birthday.strftime('%d/%m/%Y') if teacher.birthday else None,
+            "address": teacher.address,
+            "gender": teacher.gender,
+            "avatar_url": teacher.avatar_url,
+            "bio": teacher.bio,
+            "face_encoding": teacher.face_encoding is not None
+        })
+    elif g.role == 'admin':
+        # For admin users, return basic info
+        account = Account.query.filter_by(id=g.user_id).first()
+        return jsonify({
+            "username": account.username if account else None,
+            "role": "admin",
+            "message": "Admin users should use specific endpoints to manage profiles"
+        })
+    else:
+        return jsonify({"message": "Không tìm thấy thông tin người dùng"}), 404
+
+# Endpoint for updating user profile based on role
+@account_bp.route('/profile', methods=['PUT'])
+@auth_required
+def update_profile():
+    """
+    Update profile information of currently logged in user.
+    Updates student or teacher information based on the user's role.
+    """
+    data = request.get_json()
+    
+    if g.role == 'student' and g.student_id:
+        # Update student profile
+        student = Student.query.get_or_404(g.student_id)
+        
+        # Only allow updating certain fields
+        if 'email' in data:
+            student.email = data['email']
+        if 'phone_number' in data:
+            student.phone_number = data['phone_number']
+        
+        db.session.commit()
+        return jsonify({"message": "Hồ sơ sinh viên đã được cập nhật thành công"})
+        
+    elif g.role == 'teacher' and g.teacher_id:
+        # Update teacher profile
+        teacher = Teacher.query.get_or_404(g.teacher_id)
+        
+        # Only allow updating certain fields
+        if 'email' in data:
+            teacher.email = data['email']
+        if 'phone_number' in data:
+            teacher.phone_number = data['phone_number']
+        if 'bio' in data:
+            teacher.bio = data['bio']
+        
+        db.session.commit()
+        return jsonify({"message": "Hồ sơ giảng viên đã được cập nhật thành công"})
+        
+    else:
+        return jsonify({"message": "Không tìm thấy thông tin người dùng để cập nhật"}), 404

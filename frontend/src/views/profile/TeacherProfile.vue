@@ -80,7 +80,7 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Ngày sinh</label>
-                  <input type="date" class="form-control" v-model="editedTeacher.birthday" disabled>
+                  <input type="text" class="form-control" :value="teacher.birthday" disabled>
                 </div>
               </div>
               
@@ -112,13 +112,6 @@
           </div>
           <div class="card-body text-center">
             <img :src="teacher.avatar_url || placeholderImage" alt="Avatar" class="rounded-circle img-fluid" style="max-width: 150px;">
-            <div v-if="isEditing" class="mt-3">
-              <input type="file" ref="fileInput" @change="handleFileChange" accept="image/*" class="d-none" />
-              <button type="button" class="btn btn-outline-primary btn-sm" @click="$refs.fileInput.click()">
-                <i class="bi bi-upload me-1"></i>Tải ảnh lên
-              </button>
-              <p v-if="uploadStatus" class="small mt-2" :class="uploadStatus.type">{{ uploadStatus.message }}</p>
-            </div>
           </div>
         </div>
         
@@ -169,8 +162,6 @@ const isEditing = ref(false);
 const message = ref('');
 const messageType = ref('success');
 
-const fileInput = ref(null);
-const uploadStatus = ref(null);
 const username = ref('');
 
 const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23EEEEEE'/%3E%3Ctext x='75' y='75' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23AAAAAA'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
@@ -223,7 +214,7 @@ const saveProfile = async () => {
       bio: editedTeacher.bio  // Added bio field
     };
     
-    await axios.put(`http://localhost:5000/api/teachers/${teacher.value.id}`, updateData, {
+    await axios.put(`http://localhost:5000/api/profile`, updateData, {
       headers: {
         'Authorization': token
       }
@@ -240,71 +231,6 @@ const saveProfile = async () => {
     showMessage('Thông tin cá nhân đã được cập nhật thành công!', 'success');
   } catch (error) {
     showMessage('Không thể cập nhật thông tin: ' + (error.response?.data?.message || error.message), 'danger');
-  }
-};
-
-const handleFileChange = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  // Kiểm tra kích thước file (dưới 2MB)
-  if (file.size > 2 * 1024 * 1024) {
-    uploadStatus.value = {
-      message: 'File quá lớn. Vui lòng chọn file dưới 2MB',
-      type: 'text-danger'
-    };
-    return;
-  }
-  
-  // Kiểm tra loại file
-  if (!file.type.match('image.*')) {
-    uploadStatus.value = {
-      message: 'Vui lòng chọn file hình ảnh',
-      type: 'text-danger'
-    };
-    return;
-  }
-  
-  try {
-    uploadStatus.value = {
-      message: 'Đang xử lý...',
-      type: 'text-info'
-    };
-    
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    
-    reader.onload = async () => {
-      const base64Image = reader.result;
-      const token = localStorage.getItem('auth_token');
-      
-      // Upload avatar
-      const response = await axios.post('http://localhost:5000/api/upload-avatar', {
-        image: base64Image,
-        teacher_id: teacher.value.id
-      }, {
-        headers: {
-          'Authorization': token
-        }
-      });
-      
-      // Cập nhật URL mới
-      teacher.value.avatar_url = response.data.avatar_url;
-      
-      uploadStatus.value = {
-        message: 'Tải lên thành công!',
-        type: 'text-success'
-      };
-      
-      setTimeout(() => {
-        uploadStatus.value = null;
-      }, 3000);
-    };
-  } catch (error) {
-    uploadStatus.value = {
-      message: 'Lỗi: ' + (error.response?.data?.message || error.message),
-      type: 'text-danger'
-    };
   }
 };
 

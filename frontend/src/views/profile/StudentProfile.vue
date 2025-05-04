@@ -80,7 +80,7 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Ngày sinh</label>
-                  <input type="date" class="form-control" v-model="editedStudent.birthday" disabled>
+                  <input type="text" class="form-control" :value="student.birthday" disabled>
                 </div>
               </div>
               
@@ -107,13 +107,6 @@
           </div>
           <div class="card-body text-center">
             <img :src="student.avatar_url || placeholderImage" alt="Avatar" class="rounded-circle img-fluid" style="max-width: 150px;">
-            <div v-if="isEditing" class="mt-3">
-              <input type="file" ref="fileInput" @change="handleFileChange" accept="image/*" class="d-none" />
-              <button type="button" class="btn btn-outline-primary btn-sm" @click="$refs.fileInput.click()">
-                <i class="bi bi-upload me-1"></i>Tải ảnh lên
-              </button>
-              <p v-if="uploadStatus" class="small mt-2" :class="uploadStatus.type">{{ uploadStatus.message }}</p>
-            </div>
           </div>
         </div>
         
@@ -163,8 +156,6 @@ const isEditing = ref(false);
 const message = ref('');
 const messageType = ref('success');
 
-const fileInput = ref(null);
-const uploadStatus = ref(null);
 const username = ref('');
 const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23EEEEEE'/%3E%3Ctext x='75' y='75' font-family='Arial' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23AAAAAA'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
 
@@ -214,7 +205,7 @@ const saveProfile = async () => {
       phone_number: editedStudent.phone_number
     };
     
-    await axios.put(`http://localhost:5000/api/students/${student.value.id}`, updateData, {
+    await axios.put(`http://localhost:5000/api/profile`, updateData, {
       headers: {
         'Authorization': token
       }
@@ -233,71 +224,6 @@ const saveProfile = async () => {
   }
 };
 
-const handleFileChange = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  // Kiểm tra kích thước file (dưới 2MB)
-  if (file.size > 2 * 1024 * 1024) {
-    uploadStatus.value = {
-      message: 'Ảnh phải có kích thước dưới 2MB',
-      type: 'text-danger'
-    };
-    return;
-  }
-  
-  // Kiểm tra định dạng file
-  if (!file.type.match('image.*')) {
-    uploadStatus.value = {
-      message: 'Vui lòng chọn file ảnh hợp lệ',
-      type: 'text-danger'
-    };
-    return;
-  }
-  
-  uploadStatus.value = {
-    message: 'Đang tải ảnh lên...',
-    type: 'text-info'
-  };
-  
-  try {
-    // Chuyển file thành Base64
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const base64Image = reader.result;
-      
-      // Gửi lên server
-      const token = localStorage.getItem('auth_token');
-      const response = await axios.post('http://localhost:5000/api/upload-avatar', {
-        image: base64Image
-      }, {
-        headers: {
-          'Authorization': token
-        }
-      });
-      
-      // Cập nhật avatar_url
-      student.value.avatar_url = response.data.avatar_url;
-      
-      uploadStatus.value = {
-        message: 'Tải ảnh lên thành công!',
-        type: 'text-success'
-      };
-      
-      // Xóa thông báo sau 3 giây
-      setTimeout(() => {
-        uploadStatus.value = null;
-      }, 3000);
-    };
-  } catch (error) {
-    uploadStatus.value = {
-      message: 'Không thể tải ảnh lên: ' + (error.response?.data?.message || error.message),
-      type: 'text-danger'
-    };
-  }
-};
-
 const openChangePasswordModal = () => {
   // TODO: Implement password change functionality
   showMessage('Chức năng đang được phát triển!', 'info');
@@ -312,4 +238,4 @@ const showMessage = (text, type = 'success') => {
     message.value = '';
   }, 5000);
 };
-</script> 
+</script>
