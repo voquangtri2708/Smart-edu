@@ -35,18 +35,14 @@
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Ngày học</label>
+            <label class="form-label">Ngày</label>
             <div class="d-flex">
-              <select v-model="filters.day_of_week" class="form-select flex-grow-1">
-                <option value="">Tất cả các ngày</option>
-                <option value="MON">Thứ 2</option>
-                <option value="TUE">Thứ 3</option>
-                <option value="WED">Thứ 4</option>
-                <option value="THU">Thứ 5</option>
-                <option value="FRI">Thứ 6</option>
-                <option value="SAT">Thứ 7</option>
-                <option value="SUN">Chủ nhật</option>
-              </select>
+              <VueFlatpickr
+                v-model="filters.specific_date"
+                class="form-control flex-grow-1"
+                placeholder="Chọn ngày cụ thể"
+                :config="flatpickrConfig"
+              />
               <button @click="fetchSchedules" class="btn btn-primary ms-2 flex-shrink-0">
                 <i class="bi bi-search me-1"></i>Lọc
               </button>
@@ -197,31 +193,19 @@
               </div>
               
               <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <div class="mb-3">
-                    <label class="form-label">Ngày trong tuần <span class="text-danger">*</span></label>
-                    <select v-model="form.day_of_week" class="form-select" required>
-                      <option value="">Chọn ngày</option>
-                      <option value="MON">Thứ 2</option>
-                      <option value="TUE">Thứ 3</option>
-                      <option value="WED">Thứ 4</option>
-                      <option value="THU">Thứ 5</option>
-                      <option value="FRI">Thứ 6</option>
-                      <option value="SAT">Thứ 7</option>
-                      <option value="SUN">Chủ nhật</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label class="form-label">Ngày cụ thể (tùy chọn)</label>
+                    <label class="form-label">Ngày cụ thể <span class="text-danger">*</span></label>
                     <VueFlatpickr
                       v-model="form.specific_date"
                       class="form-control"
                       placeholder="DD/MM/YYYY"
                       :config="flatpickrConfig"
+                      required
                     />
+                    <div class="form-text text-muted">
+                      Ngày trong tuần sẽ được tự động tính từ ngày cụ thể
+                    </div>
                   </div>
                 </div>
               </div>
@@ -292,7 +276,6 @@ export default {
         id: null,
         class_id: "",
         classroom_id: "",
-        day_of_week: "",
         start_time: "",
         end_time: "",
         specific_date: null
@@ -306,7 +289,7 @@ export default {
       filters: {
         class_id: "",
         classroom_id: "",
-        day_of_week: ""
+        specific_date: null
       },
       loading: false,
       processing: false,
@@ -410,8 +393,11 @@ export default {
         this.processing = true;
         const scheduleData = { ...this.form };
         
+        // Đảm bảo luôn có specific_date
         if (!scheduleData.specific_date) {
-          scheduleData.specific_date = null;
+          this.showMessage("Ngày cụ thể là bắt buộc", "danger");
+          this.processing = false;
+          return;
         }
         
         if (this.editing) {
@@ -437,7 +423,6 @@ export default {
         id: schedule.id,
         class_id: schedule.class_id,
         classroom_id: schedule.classroom_id,
-        day_of_week: schedule.day_of_week,
         start_time: schedule.start_time,
         end_time: schedule.end_time,
         specific_date: schedule.specific_date
@@ -473,7 +458,6 @@ export default {
         id: null,
         class_id: "",
         classroom_id: "",
-        day_of_week: "",
         start_time: "",
         end_time: "",
         specific_date: null

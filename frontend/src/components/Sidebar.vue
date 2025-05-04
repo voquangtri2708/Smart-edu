@@ -19,7 +19,7 @@
           <router-link to="/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/student/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3 me-2"></i>Lịch học
           </router-link>
           <router-link to="#" class="submenu-item">
@@ -75,7 +75,7 @@
           <router-link to="/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/teacher/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
           </router-link>
           <router-link to="#" class="submenu-item">
@@ -248,6 +248,9 @@ const highlightActiveMenu = () => {
     menuOpen.value.profile = true;
   } else if (path.includes('/subjects')) {
     menuOpen.value.study = true;
+  } else if (path.includes('student/schedule')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('teacher/schedule')) {
     menuOpen.value.teaching = true;
   }
 };

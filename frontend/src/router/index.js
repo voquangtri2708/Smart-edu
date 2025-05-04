@@ -7,6 +7,8 @@ import AdminFeedbackStats from '@/views/admin/FeedbackStats.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';
 import CampusManagement from '@/views/admin/CampusManagement.vue';
 import ScheduleManagement from '@/views/admin/ScheduleManagement.vue';
+import StudentScheduleView from '@/views/student/StudentScheduleView.vue';
+import TeacherScheduleView from '@/views/teacher/TeacherScheduleView.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -28,6 +30,41 @@ const routes = [
   { path: "/login", component: Login },
   { path: "/student-feedbacks", component: StudentFeedback },
   { path: "/feedbacks", component: AdminFeedbackManagement },
+  
+  // Temporary route to fix the subjects link
+  {
+    path: "/subjects",
+    name: "subjects-redirect",
+    redirect: to => {
+      const userRole = localStorage.getItem('user_role');
+      if (userRole === 'admin') return '/admin/subjects';
+      if (userRole === 'student') return '/student/schedule';
+      if (userRole === 'teacher') return '/teacher/schedule';
+      return '/';
+    }
+  },
+  
+  // Student routes
+  {
+    path: "/student/schedule",
+    name: "student-schedule",
+    component: StudentScheduleView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  
+  // Teacher routes
+  {
+    path: "/teacher/schedule",
+    name: "teacher-schedule",
+    component: TeacherScheduleView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
   
   // Admin routes
   { 

@@ -57,27 +57,29 @@ def create_schedule():
     if end_time <= start_time:
         return jsonify({"error": "Thời gian kết thúc phải sau thời gian bắt đầu"}), 400
     
-    # Parse specific_date if present
-    specific_date = None
-    if 'specific_date' in data and data['specific_date']:
-        specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
+    # Parse specific_date - Bây giờ là bắt buộc
+    if 'specific_date' not in data or not data['specific_date']:
+        return jsonify({"error": "Ngày cụ thể là bắt buộc"}), 400
+
+    specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
     
-    # Validate day_of_week
-    day_of_week_num = data.get('day_of_week')
-    if isinstance(day_of_week_num, int):
-        if day_of_week_num < 1 or day_of_week_num > 7:
-            return jsonify({"error": "Ngày trong tuần phải từ 1 (Thứ 2) đến 7 (Chủ nhật)"}), 400
-        day_of_week = DAY_MAP[day_of_week_num]
-    else:
-        day_of_week = data.get('day_of_week')
-        if day_of_week not in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']:
-            return jsonify({"error": "Ngày trong tuần không hợp lệ"}), 400
+    # Tính day_of_week từ specific_date
+    day_map = {
+        0: 'MON',  # Monday
+        1: 'TUE', 
+        2: 'WED',
+        3: 'THU',
+        4: 'FRI',
+        5: 'SAT',
+        6: 'SUN'  # Sunday
+    }
+    day_of_week = day_map[specific_date.weekday()]
     
     # Check for schedule conflicts in the same classroom
     classroom_id = data['classroom_id']
     existing_schedules = Schedule.query.filter(
         Schedule.classroom_id == classroom_id,
-        Schedule.day_of_week == day_of_week
+        Schedule.specific_date == specific_date
     ).all()
     
     # Check for time conflicts manually
@@ -99,7 +101,7 @@ def create_schedule():
     new_schedule = Schedule(
         class_id=data['class_id'],
         classroom_id=classroom_id,
-        day_of_week=day_of_week,
+        day_of_week=day_of_week,  # Đã được tính từ specific_date
         start_time=start_time,
         end_time=end_time,
         specific_date=specific_date
@@ -160,17 +162,28 @@ def get_schedules():
     if classroom_id:
         query = query.filter(Schedule.classroom_id == classroom_id)
     
-    day_of_week = request.args.get('day_of_week')
-    if day_of_week:
-        if day_of_week.isdigit():
-            day_num = int(day_of_week)
-            if 1 <= day_num <= 7:
-                query = query.filter(Schedule.day_of_week == DAY_MAP[day_num])
-        else:
-            query = query.filter(Schedule.day_of_week == day_of_week)
+    # Filter by specific date if provided
+    specific_date_str = request.args.get('specific_date')
+    if specific_date_str:
+        try:
+            specific_date = datetime.strptime(specific_date_str, '%Y-%m-%d').date()
+            query = query.filter(Schedule.specific_date == specific_date)
+        except ValueError:
+            pass  # Ignore invalid date format
     
-    # Order by day of week and start time for natural schedule display
-    query = query.order_by(Schedule.day_of_week, Schedule.start_time)
+    # Filter by date range if provided
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            query = query.filter(Schedule.specific_date.between(start_date, end_date))
+        except ValueError:
+            pass  # Ignore invalid date format
+    
+    # Order by specific_date and start_time for natural schedule display
+    query = query.order_by(Schedule.specific_date, Schedule.start_time)
     
     # Get total count for pagination
     total = query.count()
@@ -293,7 +306,6 @@ def update_schedule(id):
     
     start_time = schedule.start_time
     end_time = schedule.end_time
-    day_of_week = schedule.day_of_week
     classroom_id = schedule.classroom_id
     specific_date = schedule.specific_date
     
@@ -303,21 +315,9 @@ def update_schedule(id):
         end_time = datetime.strptime(data['end_time'], '%H:%M').time()
         
     if 'specific_date' in data:
-        if data['specific_date']:
-            specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
-        else:
-            specific_date = None
-            
-    if 'day_of_week' in data:
-        day_of_week_data = data['day_of_week']
-        if isinstance(day_of_week_data, int):
-            if day_of_week_data < 1 or day_of_week_data > 7:
-                return jsonify({"error": "Ngày trong tuần phải từ 1 (Thứ 2) đến 7 (Chủ nhật)"}), 400
-            day_of_week = DAY_MAP[day_of_week_data]
-        else:
-            if day_of_week_data not in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']:
-                return jsonify({"error": "Ngày trong tuần không hợp lệ"}), 400
-            day_of_week = day_of_week_data
+        if not data['specific_date']:
+            return jsonify({"error": "Ngày cụ thể là bắt buộc"}), 400
+        specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
             
     if 'classroom_id' in data:
         classroom_id = data['classroom_id']
@@ -326,11 +326,23 @@ def update_schedule(id):
     if end_time <= start_time:
         return jsonify({"error": "Thời gian kết thúc phải sau thời gian bắt đầu"}), 400
     
+    # Tính day_of_week từ specific_date
+    day_map = {
+        0: 'MON',  # Monday
+        1: 'TUE', 
+        2: 'WED',
+        3: 'THU',
+        4: 'FRI',
+        5: 'SAT',
+        6: 'SUN'  # Sunday
+    }
+    day_of_week = day_map[specific_date.weekday()]
+    
     # Check for schedule conflicts in the same classroom (excluding this schedule)
     existing_schedules = Schedule.query.filter(
         Schedule.id != id,
         Schedule.classroom_id == classroom_id,
-        Schedule.day_of_week == day_of_week
+        Schedule.specific_date == specific_date
     ).all()
     
     # Check for time conflicts manually
@@ -354,8 +366,7 @@ def update_schedule(id):
         schedule.class_id = data['class_id']
     if 'classroom_id' in data:
         schedule.classroom_id = classroom_id
-    if 'day_of_week' in data:
-        schedule.day_of_week = day_of_week
+    schedule.day_of_week = day_of_week  # Luôn cập nhật day_of_week
     if 'start_time' in data:
         schedule.start_time = start_time
     if 'end_time' in data:
