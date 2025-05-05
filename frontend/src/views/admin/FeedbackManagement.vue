@@ -192,7 +192,7 @@
                       <div class="card-footer bg-white border-top-0">
                         <button 
                           class="btn btn-sm btn-outline-danger" 
-                          @click="confirmDelete(feedback)"
+                          @click.stop="confirmDelete(feedback)"
                         >
                           <i class="bi bi-trash me-1"></i> Xóa đánh giá
                         </button>
@@ -243,7 +243,7 @@
     </div>
 
     <!-- Modal xác nhận xóa -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-danger text-white">
@@ -253,7 +253,7 @@
           <div class="modal-body">
             <p>Bạn có chắc chắn muốn xóa đánh giá này không?</p>
             <p class="mb-1">
-              <strong>Loại đánh giá:</strong> 
+              <strong>Loại đánh giá:</strong>  
               {{ selectedFeedback && selectedFeedback.feedback_type === 'TEACHER' ? 'Đánh giá giảng viên' : 'Đánh giá phòng học' }}
             </p>
             <p class="mb-1">
@@ -601,7 +601,14 @@ const deleteFeedback = async () => {
     });
     await fetchFeedbacks();
     showToast('Đã xóa đánh giá thành công', 'success');
+    
+    // Đóng modal xác nhận xóa
     deleteModal.value.hide();
+    
+    // Đóng modal chi tiết nếu đang mở
+    if (detailModal.value && detailedFeedback.value && detailedFeedback.value.id === selectedFeedback.value.id) {
+      detailModal.value.hide();
+    }
   } catch (error) {
     console.error('Lỗi khi xóa đánh giá:', error);
     showToast('Không thể xóa đánh giá', 'danger');
