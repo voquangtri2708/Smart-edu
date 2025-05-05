@@ -29,8 +29,8 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" :class="{ 'show': isProfileMenuOpen }">
             <li><h6 class="dropdown-header">{{ getRoleText() }}</h6></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><router-link class="dropdown-item" to="/profile">
+            <li v-if="role !== 'admin'"><hr class="dropdown-divider"></li>
+            <li v-if="role !== 'admin'"><router-link class="dropdown-item" to="/profile">
               <i class="bi bi-person me-2"></i>Thông tin cá nhân
             </router-link></li>
             <li><hr class="dropdown-divider"></li>

@@ -264,7 +264,17 @@ export default {
       locale: Vietnamese.vn,
       allowInput: true,
       altFormat: 'd/m/Y',
-      altInput: true
+      altInput: true,
+      parseDate: (datestr, format) => {
+        // Xử lý khi người dùng nhập 8 số liên tiếp
+        if (/^\d{8}$/.test(datestr)) {
+          const day = datestr.substring(0, 2);
+          const month = datestr.substring(2, 4);
+          const year = datestr.substring(4, 8);
+          return new Date(`${year}-${month}-${day}`);
+        }
+        return flatpickr.parseDate(datestr, format);
+      }
     };
     
     // Current class being edited
