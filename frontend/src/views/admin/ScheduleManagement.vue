@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Quản Lý Lịch Học</h4>
-        <button @click="showAddForm = true" class="btn btn-primary">
+        <button @click="showAddScheduleForm" class="btn btn-primary">
           <i class="bi bi-plus-circle me-1"></i>Thêm Lịch Học Mới
         </button>
       </div>
@@ -355,16 +355,26 @@ export default {
         allowInput: true,
         altInput: true,
         altFormat: "d/m/Y",
+        enableTime: false,
+        time_24hr: true,
+        disableMobile: true,
         parseDate: (datestr, format) => {
-          // Xử lý khi người dùng nhập 8 số liên tiếp
-          if (/^\d{8}$/.test(datestr)) {
-            return new Date(
-              datestr.substr(4, 4) + '-' + 
-              datestr.substr(2, 2) + '-' + 
-              datestr.substr(0, 2)
-            );
+          // Xử lý khi chuỗi là một ngày ISO
+          if (datestr && datestr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = datestr.split('-').map(Number);
+            return new Date(year, month - 1, day);
           }
-          return null; // Let flatpickr handle other formats
+          
+          // Xử lý khi người dùng nhập 8 số liên tiếp (ddMMyyyy)
+          if (/^\d{8}$/.test(datestr)) {
+            const day = parseInt(datestr.substr(0, 2), 10);
+            const month = parseInt(datestr.substr(2, 2), 10) - 1;  
+            const year = parseInt(datestr.substr(4, 4), 10);
+            return new Date(year, month, day);
+          }
+          
+          // Để flatpickr xử lý các định dạng khác
+          return null;
         }
       },
       scheduleToDeleteId: null,
@@ -501,16 +511,47 @@ export default {
     },
     
     editSchedule(schedule) {
+      // Tạo bản sao thông tin schedule
       this.form = { 
         id: schedule.id,
         class_id: schedule.class_id,
         classroom_id: schedule.classroom_id,
         start_time: schedule.start_time,
-        end_time: schedule.end_time,
-        specific_date: schedule.specific_date
+        end_time: schedule.end_time
       };
+      
+      // Xử lý ngày cụ thể - cách mới
+      if (schedule.specific_date) {
+        try {
+          // Lấy ngày, tháng, năm từ chuỗi YYYY-MM-DD
+          const [year, month, day] = schedule.specific_date.split('-').map(Number);
+          
+          // Sử dụng setTimeout để tránh conflict giữa việc gán giá trị và khởi tạo datepicker
+          setTimeout(() => {
+            // Tạo đối tượng Date mới
+            this.form.specific_date = schedule.specific_date;
+            
+            console.log("Đã gán ngày:", this.form.specific_date);
+          }, 0);
+        } catch (e) {
+          console.error("Lỗi khi xử lý ngày:", e);
+          this.form.specific_date = null;
+        }
+      } else {
+        this.form.specific_date = null;
+      }
+      
       this.editing = true;
       this.showAddForm = false;
+      
+      // Hiển thị modal bằng Bootstrap với timeout
+      setTimeout(() => {
+        const modalElement = this.$refs.scheduleModal;
+        if (modalElement) {
+          const scheduleModalInstance = new Modal(modalElement);
+          scheduleModalInstance.show();
+        }
+      }, 50); // Đợi 50ms để flatpickr khởi tạo hoàn tất
     },
     
     async deleteSchedule(id) {
@@ -560,6 +601,15 @@ export default {
       this.resetForm();
       this.editing = false;
       this.showAddForm = false;
+      
+      // Đóng modal bằng Bootstrap
+      const modalElement = this.$refs.scheduleModal;
+      if (modalElement) {
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      }
     },
     
     resetForm() {
@@ -708,6 +758,19 @@ export default {
     changePerPage() {
       this.currentPage = 1;
       this.fetchSchedules();
+    },
+    
+    showAddScheduleForm() {
+      this.resetForm();
+      this.editing = false;
+      this.showAddForm = true;
+
+      // Hiển thị modal bằng Bootstrap
+      const modalElement = this.$refs.scheduleModal;
+      if (modalElement) {
+        const scheduleModalInstance = new Modal(modalElement);
+        scheduleModalInstance.show();
+      }
     }
   },
   mounted() {
@@ -721,11 +784,26 @@ export default {
 /* Add modal styles for when Bootstrap JS is not available */
 .modal {
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1050;
+  z-index: 1060 !important;
 }
 
 /* Hide scrollbar on body when modal is shown */
 :global(body.modal-open) {
   overflow: hidden;
+}
+
+/* Ensure modal is always on top of backdrop */
+.modal-content {
+  z-index: 1061 !important;
+  position: relative;
+}
+
+/* Fix for multiple backdrops */
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.modal-backdrop + .modal-backdrop {
+  z-index: 1049 !important;
 }
 </style>
