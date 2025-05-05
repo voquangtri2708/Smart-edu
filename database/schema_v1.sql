@@ -37,7 +37,7 @@ CREATE TABLE subject
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
     code VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     credit INT NOT NULL,
     description TEXT
 );
@@ -93,7 +93,7 @@ CREATE TABLE class
 CREATE TABLE building
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     campus_id INT,
     CONSTRAINT fk_building_campus FOREIGN KEY (campus_id) REFERENCES campus (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -102,7 +102,7 @@ CREATE TABLE building
 CREATE TABLE classroom
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    room_number VARCHAR(50) UNIQUE NOT NULL,
+    room_number VARCHAR(50) NOT NULL,
     capacity INT NOT NULL,
     facilities TEXT,
     building_id INT,
@@ -264,3 +264,14 @@ CREATE TABLE attendance (
     CONSTRAINT fk_attendance_schedule FOREIGN KEY (schedule_id) REFERENCES schedule(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_attendance_teacher FOREIGN KEY (recorded_by) REFERENCES teacher(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+
+ALTER TABLE building
+ADD UNIQUE (name, campus_id);
+
+ALTER TABLE classroom 
+ADD UNIQUE (room_number, building_id);
+
+
+ALTER TABLE class
+ADD COLUMN is_del BOOLEAN DEFAULT FALSE NOT NULL AFTER end_date;

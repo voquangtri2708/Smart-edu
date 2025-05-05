@@ -517,11 +517,21 @@ def get_classrooms_for_feedback(student_id, class_id):
         evaluated_classroom_ids = [c.classroom_id for c in evaluated_classrooms]
         logging.info(f"Evaluated classroom IDs: {evaluated_classroom_ids}")
         
-        # Lấy tất cả phòng học (đơn giản hóa, thực tế cần lấy từ class_schedule)
-        # Giữ nguyên logic cũ tương tự như classroom_feedback.py
+        # Lấy các phòng học từ lịch học của lớp này thay vì tất cả phòng học
+        from app.models.schedule import Schedule
         from app.models.classroom import Classroom
-        classrooms = Classroom.query.all()
-        logging.info(f"Total classrooms count: {len(classrooms)}")
+        
+        # Lấy các phòng học duy nhất từ lịch học của lớp
+        classroom_ids_query = db.session.query(Schedule.classroom_id).filter(
+            Schedule.class_id == class_id
+        ).distinct()
+        
+        classroom_ids = [item[0] for item in classroom_ids_query.all()]
+        logging.info(f"Found {len(classroom_ids)} classrooms in schedule for class {class_id}")
+        
+        # Lấy thông tin các phòng học từ bảng Classroom
+        classrooms = Classroom.query.filter(Classroom.id.in_(classroom_ids)).all()
+        logging.info(f"Total classrooms from schedule: {len(classrooms)}")
         
         # Lọc ra các phòng học chưa được đánh giá
         available_classrooms = []

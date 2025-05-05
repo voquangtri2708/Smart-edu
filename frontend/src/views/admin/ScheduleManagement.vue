@@ -11,7 +11,20 @@
       <div class="card-body">
         <!-- Hiển thị thông báo -->
         <div v-if="message" :class="'alert alert-' + messageType" role="alert">
-          {{ message }}
+          <div class="d-flex align-items-start">
+            <i :class="getAlertIcon" class="me-2 mt-1 fs-5"></i>
+            <div>
+              <span v-if="!hasDetails">{{ message }}</span>
+              <template v-else>
+                <strong>{{ messageTitle }}</strong>
+                <ul class="mb-0 mt-1">
+                  <li v-for="(detail, index) in messageDetails" :key="index">
+                    {{ detail }}
+                  </li>
+                </ul>
+              </template>
+            </div>
+          </div>
         </div>
         
         <!-- Search and filter -->
@@ -295,6 +308,8 @@ export default {
       processing: false,
       message: "",
       messageType: "success",
+      messageTitle: "",
+      messageDetails: [],
       flatpickrConfig: {
         dateFormat: "Y-m-d",
         locale: Vietnamese.vn,
@@ -333,6 +348,18 @@ export default {
       }
       
       return pages;
+    },
+    hasDetails() {
+      return Array.isArray(this.messageDetails) && this.messageDetails.length > 0;
+    },
+    getAlertIcon() {
+      const iconMap = {
+        success: "bi bi-check-circle-fill text-success",
+        danger: "bi bi-exclamation-triangle-fill text-danger",
+        warning: "bi bi-exclamation-circle-fill text-warning",
+        info: "bi bi-info-circle-fill text-info"
+      };
+      return iconMap[this.messageType] || "bi bi-info-circle-fill text-info";
     }
   },
   methods: {
@@ -412,7 +439,21 @@ export default {
         this.cancelEdit();
       } catch (error) {
         console.error("Lỗi khi lưu lịch học:", error);
-        this.showMessage(error.response?.data?.error || "Lỗi khi lưu lịch học", "danger");
+        
+        // Xử lý chi tiết các loại lỗi xung đột lịch học
+        if (error.response?.data) {
+          const errorData = error.response.data;
+          let errorMessage = errorData.error || "Lỗi khi lưu lịch học";
+          
+          // Hiển thị thông tin chi tiết nếu có
+          if (errorData.detail) {
+            errorMessage += ": " + errorData.detail;
+          }
+          
+          this.showMessage(errorMessage, "danger");
+        } else {
+          this.showMessage("Lỗi khi lưu lịch học", "danger");
+        }
       } finally {
         this.processing = false;
       }
@@ -514,13 +555,68 @@ export default {
       return dayMap[day] || day;
     },
     
-    showMessage(text, type = 'success') {
+    showMessage(text, type = 'success', details = null) {
       this.message = text;
       this.messageType = type;
+      this.messageDetails = [];
+      
+      // Xử lý khi message có dạng "Tiêu đề: Chi tiết"
+      if (text && text.includes(":")) {
+        const parts = text.split(":");
+        this.messageTitle = parts[0].trim();
+        
+        if (parts.length > 1) {
+          // Kiểm tra nếu chi tiết chứa từ khóa về các loại xung đột
+          const detailText = parts.slice(1).join(":").trim();
+          
+          if (detailText.includes("sinh viên") || detailText.includes("giáo viên") || 
+              detailText.includes("lớp học") || detailText.includes("phòng học")) {
+            
+            // Parse các thông tin xung đột
+            this.parseConflictDetails(detailText);
+          } else {
+            // Nếu không phải dạng xung đột đặc biệt, hiển thị nguyên text
+            this.messageDetails = [detailText];
+          }
+        }
+      } else {
+        this.messageTitle = text;
+      }
+      
+      // Nếu có thông tin chi tiết bổ sung được cung cấp
+      if (details) {
+        if (Array.isArray(details)) {
+          this.messageDetails = [...this.messageDetails, ...details];
+        } else {
+          this.messageDetails.push(details);
+        }
+      }
+      
+      // Tăng thời gian hiển thị nếu có chi tiết
+      const displayTime = this.messageDetails.length > 0 ? 6000 : 3000;
       
       setTimeout(() => {
         this.message = '';
-      }, 3000);
+        this.messageTitle = '';
+        this.messageDetails = [];
+      }, displayTime);
+    },
+    
+    parseConflictDetails(detailText) {
+      // Xử lý các dạng thông báo lỗi phổ biến
+      if (detailText.includes("sinh viên có lịch trùng")) {
+        this.messageDetails.push("Có sinh viên đã được xếp lịch học vào cùng thời điểm này");
+        this.messageDetails.push(detailText);
+        this.messageDetails.push("Vui lòng chọn thời điểm khác hoặc thay đổi danh sách sinh viên của lớp");
+      }
+      else if (detailText.includes("giáo viên có lịch trùng")) {
+        this.messageDetails.push("Có giáo viên đã được phân công dạy vào cùng thời điểm này");
+        this.messageDetails.push(detailText);
+        this.messageDetails.push("Vui lòng chọn thời điểm khác hoặc phân công giáo viên khác");
+      }
+      else {
+        this.messageDetails.push(detailText);
+      }
     },
     
     changePerPage() {
