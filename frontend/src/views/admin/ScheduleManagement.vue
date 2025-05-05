@@ -170,7 +170,7 @@
     </div>
     
     <!-- Modal thêm/sửa lịch học -->
-    <div class="modal fade" id="scheduleModal" tabindex="-1" ref="scheduleModal" :class="{ 'show d-block': showAddForm || editing }" style="z-index: 1060;">
+    <div class="modal fade" id="scheduleModal" tabindex="-1" data-bs-backdrop="static" ref="scheduleModal" :class="{ 'show': showAddForm || editing }" style="z-index: 1050;">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -262,8 +262,41 @@
       </div>
     </div>
     
-    <!-- Modal backdrop -->
-    <div class="modal-backdrop fade show" v-if="showAddForm || editing" @click="cancelEdit" style="z-index: 1050;"></div>
+    <!-- Delete Confirmation Modal - Đã tăng z-index lên cao hơn -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static" ref="deleteModal" style="z-index: 1070;">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Xác nhận xóa</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Bạn có chắc chắn muốn xóa lịch học này không?</p>
+            <p class="text-danger"><small>Hành động này không thể hoàn tác.</small></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="button" class="btn btn-danger" @click="confirmDeleteSchedule" :disabled="processing">
+              <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" ref="toastNotification">
+        <div class="toast-header" :class="{'bg-success text-white': toastType === 'success', 'bg-danger text-white': toastType === 'error', 'bg-warning text-white': toastType === 'warning'}">
+          <strong class="me-auto">{{ toastTitle }}</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          {{ toastMessage }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -272,6 +305,8 @@ import { scheduleAPI } from "@/utils/api";
 import VueFlatpickr from "vue-flatpickr-component";
 import "flatpickr/dist/flatpickr.css";
 import Vietnamese from 'flatpickr/dist/l10n/vn.js';
+import { Modal, Toast } from 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default {
   components: {
@@ -310,6 +345,10 @@ export default {
       messageType: "success",
       messageTitle: "",
       messageDetails: [],
+      // Toast notification
+      toastTitle: "Thông báo",
+      toastMessage: "",
+      toastType: "success",
       flatpickrConfig: {
         dateFormat: "Y-m-d",
         locale: Vietnamese.vn,
@@ -327,7 +366,9 @@ export default {
           }
           return null; // Let flatpickr handle other formats
         }
-      }
+      },
+      scheduleToDeleteId: null,
+      confirmingDelete: false
     };
   },
   computed: {
@@ -473,18 +514,45 @@ export default {
     },
     
     async deleteSchedule(id) {
-      if (confirm("Bạn có chắc muốn xóa lịch học này?")) {
-        try {
-          this.processing = true;
-          await scheduleAPI.deleteSchedule(id);
-          this.showMessage("Xóa lịch học thành công", "success");
-          this.fetchSchedules();
-        } catch (error) {
-          console.error("Lỗi khi xóa lịch học:", error);
-          this.showMessage("Không thể xóa lịch học", "danger");
-        } finally {
-          this.processing = false;
+      // Lưu ID lịch học cần xóa vào state
+      this.scheduleToDeleteId = id;
+      this.confirmingDelete = true;
+      
+      // Hiển thị modal xác nhận xóa
+      const modalElement = this.$refs.deleteModal;
+      if (modalElement) {
+        const deleteModalInstance = new Modal(modalElement);
+        deleteModalInstance.show();
+      } else {
+        // Fallback nếu không tìm thấy modal element
+        if (confirm("Bạn có chắc chắn muốn xóa lịch học này không?")) {
+          this.confirmDeleteSchedule();
         }
+      }
+    },
+    
+    async confirmDeleteSchedule() {
+      try {
+        this.processing = true;
+        await scheduleAPI.deleteSchedule(this.scheduleToDeleteId);
+        
+        // Đóng modal xác nhận
+        const modalElement = this.$refs.deleteModal;
+        if (modalElement) {
+          const modalInstances = Modal.getInstance(modalElement);
+          if (modalInstances) {
+            modalInstances.hide();
+          }
+        }
+        
+        this.showMessage("Xóa lịch học thành công", "success");
+        this.fetchSchedules();
+      } catch (error) {
+        console.error("Lỗi khi xóa lịch học:", error);
+        this.showMessage("Không thể xóa lịch học", "danger");
+      } finally {
+        this.processing = false;
+        this.confirmingDelete = false;
       }
     },
     
@@ -556,50 +624,68 @@ export default {
     },
     
     showMessage(text, type = 'success', details = null) {
-      this.message = text;
-      this.messageType = type;
-      this.messageDetails = [];
+      // Cập nhật thông tin cho toast notification
+      this.toastTitle = "Thông báo";
+      this.toastMessage = text;
+      this.toastType = type === "danger" ? "error" : type;
       
-      // Xử lý khi message có dạng "Tiêu đề: Chi tiết"
-      if (text && text.includes(":")) {
-        const parts = text.split(":");
-        this.messageTitle = parts[0].trim();
+      // Vẫn giữ lại cách hiển thị alert hiện tại cho trường hợp có chi tiết phức tạp
+      if (details || (text && text.includes(":"))) {
+        this.message = text;
+        this.messageType = type;
+        this.messageDetails = [];
         
-        if (parts.length > 1) {
-          // Kiểm tra nếu chi tiết chứa từ khóa về các loại xung đột
-          const detailText = parts.slice(1).join(":").trim();
+        // Xử lý khi message có dạng "Tiêu đề: Chi tiết"
+        if (text && text.includes(":")) {
+          const parts = text.split(":");
+          this.messageTitle = parts[0].trim();
           
-          if (detailText.includes("sinh viên") || detailText.includes("giáo viên") || 
-              detailText.includes("lớp học") || detailText.includes("phòng học")) {
+          if (parts.length > 1) {
+            // Kiểm tra nếu chi tiết chứa từ khóa về các loại xung đột
+            const detailText = parts.slice(1).join(":").trim();
             
-            // Parse các thông tin xung đột
-            this.parseConflictDetails(detailText);
+            if (detailText.includes("sinh viên") || detailText.includes("giáo viên") || 
+                detailText.includes("lớp học") || detailText.includes("phòng học")) {
+              
+              // Parse các thông tin xung đột
+              this.parseConflictDetails(detailText);
+            } else {
+              // Nếu không phải dạng xung đột đặc biệt, hiển thị nguyên text
+              this.messageDetails = [detailText];
+            }
+          }
+        } else {
+          this.messageTitle = text;
+        }
+        
+        // Nếu có thông tin chi tiết bổ sung được cung cấp
+        if (details) {
+          if (Array.isArray(details)) {
+            this.messageDetails = [...this.messageDetails, ...details];
           } else {
-            // Nếu không phải dạng xung đột đặc biệt, hiển thị nguyên text
-            this.messageDetails = [detailText];
+            this.messageDetails.push(details);
           }
         }
+        
+        // Tăng thời gian hiển thị nếu có chi tiết
+        const displayTime = this.messageDetails.length > 0 ? 6000 : 3000;
+        
+        setTimeout(() => {
+          this.message = '';
+          this.messageTitle = '';
+          this.messageDetails = [];
+        }, displayTime);
       } else {
-        this.messageTitle = text;
-      }
-      
-      // Nếu có thông tin chi tiết bổ sung được cung cấp
-      if (details) {
-        if (Array.isArray(details)) {
-          this.messageDetails = [...this.messageDetails, ...details];
-        } else {
-          this.messageDetails.push(details);
+        // Nếu là thông báo đơn giản, chỉ hiển thị toast
+        this.message = '';
+        
+        // Hiển thị Toast notification
+        const toastEl = this.$refs.toastNotification;
+        if (toastEl) {
+          const toast = new Toast(toastEl);
+          toast.show();
         }
       }
-      
-      // Tăng thời gian hiển thị nếu có chi tiết
-      const displayTime = this.messageDetails.length > 0 ? 6000 : 3000;
-      
-      setTimeout(() => {
-        this.message = '';
-        this.messageTitle = '';
-        this.messageDetails = [];
-      }, displayTime);
     },
     
     parseConflictDetails(detailText) {
