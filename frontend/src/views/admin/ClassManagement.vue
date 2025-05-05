@@ -342,7 +342,11 @@ export default {
     const fetchSubjects = async () => {
       try {
         const token = localStorage.getItem('auth_token');
+        // Sử dụng phương thức getSubjects() từ api.js đã được định nghĩa
         const response = await axios.get('http://localhost:5000/api/subjects', {
+          params: {
+            per_page: 200 // Lấy tối đa 200 môn học để đảm bảo đủ dữ liệu
+          },
           headers: {
             'Authorization': token
           }
