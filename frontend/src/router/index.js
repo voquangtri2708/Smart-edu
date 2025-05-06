@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
-import StudentFeedback from '@/views/StudentFeedback.vue';
+import StudentFeedback from '@/views/student/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
 import AdminFeedbackStats from '@/views/admin/FeedbackStats.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';

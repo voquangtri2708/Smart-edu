@@ -187,7 +187,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import { Toast } from 'bootstrap';
-import api from '../utils/api'; // Import API utility
+import api from '../../utils/api'; // Import API utility
 
 const studentId = ref(''); // Lấy từ localStorage khi tích hợp authentication
 const classes = ref([]);
