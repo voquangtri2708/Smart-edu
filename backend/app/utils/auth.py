@@ -45,6 +45,34 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Add student_required decorator
+def student_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_required_result = auth_required(lambda *a, **kw: None)(*args, **kwargs)
+        if isinstance(auth_required_result, tuple):
+            return auth_required_result
+            
+        if g.role != 'student' or not g.student_id:
+            return jsonify({"message": "Bạn không có quyền thực hiện hành động này. Cần đăng nhập với tài khoản học sinh."}), 403
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Add teacher_required decorator
+def teacher_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_required_result = auth_required(lambda *a, **kw: None)(*args, **kwargs)
+        if isinstance(auth_required_result, tuple):
+            return auth_required_result
+            
+        if g.role != 'teacher' or not g.teacher_id:
+            return jsonify({"message": "Bạn không có quyền thực hiện hành động này. Cần đăng nhập với tài khoản giáo viên."}), 403
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Add the missing teacher_or_admin_required decorator
 def teacher_or_admin_required(f):
     @wraps(f)

@@ -13,6 +13,9 @@ import QuestionBankManagement from '@/views/admin/QuestionBankManagement.vue';
 import TeacherQuestionBankManagement from '@/views/teacher/QuestionBankManagement.vue';
 import TeacherExamManagement from '@/views/teacher/ExamManagement.vue';
 import ExamQuestionManager from '@/views/teacher/ExamQuestionManager.vue';
+import StudentExamView from '@/views/student/StudentExamView.vue';
+import StudentExamTakeView from '@/views/student/StudentExamTakeView.vue';
+import StudentExamResultView from '@/views/student/StudentExamResultView.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -53,6 +56,35 @@ const routes = [
     path: "/student/schedule",
     name: "student-schedule",
     component: StudentScheduleView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/exams",
+    name: "student-exam-schedule",
+    component: StudentExamView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/exams/:id/take",
+    name: "student-exam-take",
+    component: StudentExamTakeView,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/exams/:id/result",
+    name: "student-exam-result",
+    component: StudentExamResultView,
+    props: true,
     meta: { 
       requiresAuth: true, 
       requiredRole: "student" 

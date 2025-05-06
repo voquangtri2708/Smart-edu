@@ -48,6 +48,9 @@ def create_app():
     from app.routes.exam import exam_bp
     from app.routes.question import question_bp
     from app.routes.notification import notification_bp
+    from app.routes.student_exam import student_exam_bp
+    from app.routes.student_exam_answer import student_exam_answer_bp
+    from app.routes.face_recognition import face_recognition_bp
 
     app.register_blueprint(account_bp, url_prefix="/api")
     app.register_blueprint(class_bp, url_prefix="/api")
@@ -70,5 +73,8 @@ def create_app():
     app.register_blueprint(exam_bp, url_prefix="/api")
     app.register_blueprint(question_bp, url_prefix="/api")
     app.register_blueprint(notification_bp, url_prefix="/api")
+    app.register_blueprint(student_exam_bp, url_prefix='/api')
+    app.register_blueprint(student_exam_answer_bp, url_prefix='/api')
+    app.register_blueprint(face_recognition_bp, url_prefix='/api')
     
     return app

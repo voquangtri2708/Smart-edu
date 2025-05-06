@@ -22,6 +22,9 @@
           <router-link to="/student/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3 me-2"></i>Lịch học
           </router-link>
+          <router-link to="/student/exams" class="submenu-item" active-class="active">
+            <i class="bi bi-journal-check me-2"></i>Lịch kiểm tra
+          </router-link>
           <router-link to="#" class="submenu-item">
             <i class="bi bi-table me-2"></i>Bảng điểm
           </router-link>
