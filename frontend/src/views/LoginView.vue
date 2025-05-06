@@ -40,7 +40,7 @@
   
   <script setup>
   import { ref } from "vue";
-  import axios from "axios";
+  import api from "@/utils/api";
   import { useRouter } from "vue-router";
   
   const showPassword = ref(false);
@@ -63,7 +63,7 @@
   }
 
   try {
-    const response = await axios.post("http://localhost:5000/api/accounts/login", {
+    const response = await api.post("/accounts/login", {
       identifier: identifier.value,
       password: password.value,
     });

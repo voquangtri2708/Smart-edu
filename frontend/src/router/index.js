@@ -9,6 +9,8 @@ import CampusManagement from '@/views/admin/CampusManagement.vue';
 import ScheduleManagement from '@/views/admin/ScheduleManagement.vue';
 import StudentScheduleView from '@/views/student/StudentScheduleView.vue';
 import TeacherScheduleView from '@/views/teacher/TeacherScheduleView.vue';
+import QuestionBankManagement from '@/views/admin/QuestionBankManagement.vue';
+import TeacherQuestionBankManagement from '@/views/teacher/QuestionBankManagement.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -65,6 +67,15 @@ const routes = [
       requiredRole: "teacher" 
     }
   },
+  {
+    path: "/teacher/questions",
+    name: "teacher-question-bank",
+    component: TeacherQuestionBankManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
   
   // Admin routes
   { 
@@ -90,6 +101,15 @@ const routes = [
     path: "/admin/classes", 
     name: "admin-classes",
     component: AdminClassManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
+  {
+    path: "/admin/questions",
+    name: "admin-question-bank",
+    component: QuestionBankManagement,
     meta: { 
       requiresAuth: true, 
       requiredRole: "admin" 
@@ -182,6 +202,16 @@ const routes = [
       const userRole = localStorage.getItem('user_role');
       if (userRole === 'student') return '/profile/student';
       if (userRole === 'teacher') return '/profile/teacher';
+      return '/';
+    }
+  },
+  // Question Bank redirect based on role
+  {
+    path: "/questions",
+    redirect: to => {
+      const userRole = localStorage.getItem('user_role');
+      if (userRole === 'admin') return '/admin/questions';
+      if (userRole === 'teacher') return '/teacher/questions';
       return '/';
     }
   },

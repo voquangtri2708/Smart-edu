@@ -225,7 +225,7 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import VueFlatpickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
@@ -308,7 +308,7 @@ export default {
       loading.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.get('http://localhost:5000/api/classes', {
+        const response = await api.get('/classes', {
           params: {
             page: currentPage.value,
             per_page: pageSize.value,
@@ -343,7 +343,7 @@ export default {
       try {
         const token = localStorage.getItem('auth_token');
         // Sử dụng phương thức getSubjects() từ api.js đã được định nghĩa
-        const response = await axios.get('http://localhost:5000/api/subjects', {
+        const response = await api.get('/subjects', {
           params: {
             per_page: 200 // Lấy tối đa 200 môn học để đảm bảo đủ dữ liệu
           },
@@ -473,7 +473,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.post('http://localhost:5000/api/classes', currentClass, {
+        await api.post('/classes', currentClass, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -507,7 +507,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.put(`http://localhost:5000/api/classes/${currentClass.id}`, currentClass, {
+        await api.put(`/classes/${currentClass.id}`, currentClass, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -549,7 +549,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.delete(`http://localhost:5000/api/classes/${deleteClassId.value}`, {
+        await api.delete(`/classes/${deleteClassId.value}`, {
           headers: {
             'Authorization': token
           }

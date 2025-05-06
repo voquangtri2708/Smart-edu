@@ -205,25 +205,44 @@ CREATE TABLE exam
     duration_minutes INT NOT NULL,
     class_id INT NOT NULL,
     grade_type_id INT NOT NULL,
+    exam_start_time TIME NOT NULL,
+    exam_end_time TIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_exam_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_exam_grade_type FOREIGN KEY (grade_type_id) REFERENCES grade_type (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 17. Bảng Exam Question (Đề thi)
+CREATE TABLE question
+(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    question_text TEXT NOT NULL,
+    question_type ENUM('MULTIPLE_CHOICE', 'TRUE_FALSE', 'ESSAY', 'SHORT_ANSWER') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE answer
+(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    question_id INT NOT NULL,
+    answer_text TEXT,
+    is_correct BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES question (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE exam_question
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
     exam_id INT NOT NULL,
-    question_text TEXT NOT NULL,
-    answer_options TEXT,
-    correct_answer TEXT,
-    points FLOAT NOT NULL,
-    question_type ENUM('MULTIPLE_CHOICE', 'TRUE_FALSE', 'ESSAY', 'SHORT_ANSWER') NOT NULL,
+    question_id INT NOT NULL,
+    points double NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_exam_question_exam FOREIGN KEY (exam_id) REFERENCES exam (id) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT fk_exam_question_exam FOREIGN KEY (exam_id) REFERENCES exam (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_exam_question_question FOREIGN KEY (question_id) REFERENCES question (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Thêm gender vào bảng student và teacher

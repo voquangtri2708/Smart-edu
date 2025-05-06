@@ -324,7 +324,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeMount } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
@@ -390,7 +390,7 @@ onMounted(async () => {
 const fetchStudents = async () => {
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await axios.get('http://localhost:5000/api/students', {
+    const response = await api.get('/students', {
       params: {
         page: currentPage.value,
         per_page: pageSize.value,
@@ -557,7 +557,7 @@ const saveStudent = async () => {
       // Xử lý avatar nếu có
       if (studentData.avatar_data) {
         // Upload avatar trước
-        const avatarResponse = await axios.post('http://localhost:5000/api/upload-avatar', {
+        const avatarResponse = await api.post('/upload-avatar', {
           image: studentData.avatar_data,
           student_id: studentData.id
         }, {
@@ -569,7 +569,7 @@ const saveStudent = async () => {
         delete studentData.avatar_data;
       }
       
-      await axios.put(`http://localhost:5000/api/students/${studentData.id}`, studentData, {
+      await api.put(`/students/${studentData.id}`, studentData, {
         headers: { 'Authorization': token }
       });
       
@@ -586,13 +586,13 @@ const saveStudent = async () => {
       }
       
       // Tạo sinh viên
-      await axios.post('http://localhost:5000/api/students', studentData, {
+      await api.post('/students', studentData, {
         headers: { 'Authorization': token }
       });
       
       // Create account for new student
       if (accountData.value.username && accountData.value.password) {
-        await axios.post('http://localhost:5000/api/accounts', {
+        await api.post('/accounts', {
           username: accountData.value.username,
           password: accountData.value.password,
           email: currentStudent.value.email,
@@ -606,7 +606,7 @@ const saveStudent = async () => {
         
         // Upload avatar nếu có
         if (currentStudent.value.avatar_data) {
-          await axios.post('http://localhost:5000/api/upload-avatar', {
+          await api.post('/upload-avatar', {
             image: currentStudent.value.avatar_data,
             student_id: currentStudent.value.id
           }, {
@@ -632,7 +632,7 @@ const deleteStudent = async () => {
   processing.value = true;
   try {
     const token = localStorage.getItem('auth_token');
-    await axios.delete(`http://localhost:5000/api/students/${deleteStudentId.value}`, {
+    await api.delete(`/students/${deleteStudentId.value}`, {
       headers: {
         'Authorization': token
       }

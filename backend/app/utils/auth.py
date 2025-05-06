@@ -45,6 +45,21 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Add the missing teacher_or_admin_required decorator
+def teacher_or_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_required_result = auth_required(lambda *a, **kw: None)(*args, **kwargs)
+        if isinstance(auth_required_result, tuple):
+            return auth_required_result
+            
+        # Allow admin and teacher roles
+        if g.role in ['admin', 'teacher']:
+            return f(*args, **kwargs)
+            
+        return jsonify({"message": "Bạn không có quyền thực hiện hành động này"}), 403
+    return decorated_function
+
 # Thêm decorator mới cho student hoặc admin
 def student_self_or_admin_required(f):
     @wraps(f)

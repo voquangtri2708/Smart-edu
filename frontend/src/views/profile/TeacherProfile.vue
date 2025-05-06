@@ -143,7 +143,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 
 // State
 const teacher = ref(null);
@@ -178,7 +178,7 @@ const fetchProfile = async () => {
   try {
     loading.value = true;
     const token = localStorage.getItem('auth_token');
-    const response = await axios.get('http://localhost:5000/api/profile', {
+    const response = await api.get('/profile', {
       headers: {
         'Authorization': token
       }
@@ -214,7 +214,7 @@ const saveProfile = async () => {
       bio: editedTeacher.bio  // Added bio field
     };
     
-    await axios.put(`http://localhost:5000/api/profile`, updateData, {
+    await api.put(`/profile`, updateData, {
       headers: {
         'Authorization': token
       }

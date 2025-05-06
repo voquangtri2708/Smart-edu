@@ -143,7 +143,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal } from 'bootstrap';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -520,11 +520,7 @@ const fetchSchedules = async () => {
     }
     
     // Fetch tất cả lịch học không giới hạn thời gian
-    const response = await axios.get('http://localhost:5000/api/schedules', { 
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await api.get('/schedules');
     
     if (response.data && response.data.items) {
       scheduleData.value = response.data.items;
@@ -557,11 +553,7 @@ const fetchClasses = async () => {
     }
     
     // Use the actual API endpoint with auth token
-    const response = await axios.get(`http://localhost:5000/api/class_teachers/teacher/${teacherId}/classes`, {
-      headers: {
-        'Authorization': token
-      }
-    });
+    const response = await api.get(`/class_teachers/teacher/${teacherId}/classes`);
     
     if (response.data && response.data.items) {
       classes.value = response.data.items;

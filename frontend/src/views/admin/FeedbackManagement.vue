@@ -425,7 +425,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import { debounce } from '@/utils/debounce';
 
@@ -490,7 +490,7 @@ const calculateSentimentCounts = async () => {
     }
     
     // Gọi API không phân trang để lấy số lượng
-    const response = await axios.get('http://localhost:5000/api/feedbacks', {
+    const response = await api.get('/feedbacks', {
       params: {
         ...params,
         per_page: 1000 // Lấy số lượng lớn để tính toán thống kê
@@ -539,7 +539,7 @@ const fetchFeedbacks = async () => {
     }
     
     // Lấy dữ liệu từ API mới với phân trang
-    const response = await axios.get('http://localhost:5000/api/feedbacks', { 
+    const response = await api.get('/feedbacks', { 
       params,
       headers: {
         'Authorization': `Bearer ${token}`
@@ -594,7 +594,7 @@ const deleteFeedback = async () => {
     const token = localStorage.getItem('auth_token');
     
     // Sử dụng API mới để xóa feedback
-    await axios.delete(`http://localhost:5000/api/feedbacks/${selectedFeedback.value.id}`, {
+    await api.delete(`/feedbacks/${selectedFeedback.value.id}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -699,7 +699,7 @@ const showFeedbackDetail = async (id) => {
     const token = localStorage.getItem('auth_token');
     
     // Lấy chi tiết đánh giá từ API
-    const response = await axios.get(`http://localhost:5000/api/feedbacks/${id}`, {
+    const response = await api.get(`/feedbacks/${id}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

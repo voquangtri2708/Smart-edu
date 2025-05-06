@@ -405,7 +405,7 @@ import {
   Legend, 
   ArcElement 
 } from 'chart.js';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal } from 'bootstrap';
 import html2pdf from 'html2pdf.js';
 import VueFlatpickr from 'vue-flatpickr-component';
@@ -487,7 +487,7 @@ export default {
         if (filters.value.month) params.month = filters.value.month;
         if (filters.value.quarter) params.quarter = filters.value.quarter;
         
-        const response = await axios.get('http://localhost:5000/api/admin/stats/feedback', {
+        const response = await api.get('/admin/stats/feedback', {
           params,
           headers: {
             'Authorization': `Bearer ${token}`

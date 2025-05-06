@@ -81,6 +81,9 @@
           <router-link to="#" class="submenu-item">
             <i class="bi bi-pencil-square me-2"></i>Nhập điểm sinh viên
           </router-link>
+          <router-link to="/teacher/questions" class="submenu-item" active-class="active">
+            <i class="bi bi-question-circle me-2"></i>Ngân hàng câu hỏi
+          </router-link>
         </div>
         
         <!-- Thêm mới: Thông tin cá nhân -->
@@ -156,6 +159,9 @@
           </router-link>
           <router-link to="/admin/schedules" class="submenu-item" active-class="active">
             <i class="bi bi-clock me-2"></i>Quản lý lịch học
+          </router-link>
+          <router-link to="/admin/questions" class="submenu-item" active-class="active">
+            <i class="bi bi-question-circle me-2"></i>Ngân hàng câu hỏi
           </router-link>
         </div>
         

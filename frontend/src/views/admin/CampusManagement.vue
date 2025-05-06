@@ -183,7 +183,7 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import Pagination from '@/components/Pagination.vue';
 import { debounce } from '@/utils/debounce';
@@ -240,7 +240,7 @@ export default {
       loading.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.get('http://localhost:5000/api/campuses', {
+        const response = await api.get('/campuses', {
           params: {
             page: currentPage.value,
             per_page: pageSize.value,
@@ -351,7 +351,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.post('http://localhost:5000/api/campuses', currentCampus, {
+        await api.post('/campuses', currentCampus, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -379,7 +379,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.put(`http://localhost:5000/api/campuses/${currentCampus.id}`, currentCampus, {
+        await api.put(`/campuses/${currentCampus.id}`, currentCampus, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -421,7 +421,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.delete(`http://localhost:5000/api/campuses/${deleteCampusId.value}`, {
+        await api.delete(`/campuses/${deleteCampusId.value}`, {
           headers: {
             'Authorization': token
           }
