@@ -84,6 +84,9 @@
           <router-link to="/teacher/questions" class="submenu-item" active-class="active">
             <i class="bi bi-question-circle me-2"></i>Ngân hàng câu hỏi
           </router-link>
+          <router-link to="/teacher/exams" class="submenu-item" active-class="active">
+            <i class="bi bi-file-earmark-text me-2"></i>Quản lý đợt thi
+          </router-link>
         </div>
         
         <!-- Thêm mới: Thông tin cá nhân -->
@@ -257,6 +260,10 @@ const highlightActiveMenu = () => {
   } else if (path.includes('student/schedule')) {
     menuOpen.value.study = true;
   } else if (path.includes('teacher/schedule')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/questions')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/exams')) {
     menuOpen.value.teaching = true;
   }
 };

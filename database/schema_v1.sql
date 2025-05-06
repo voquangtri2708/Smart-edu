@@ -204,13 +204,11 @@ CREATE TABLE exam
     exam_date DATE NOT NULL,
     duration_minutes INT NOT NULL,
     class_id INT NOT NULL,
-    grade_type_id INT NOT NULL,
     exam_start_time TIME NOT NULL,
     exam_end_time TIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_exam_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_exam_grade_type FOREIGN KEY (grade_type_id) REFERENCES grade_type (id) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT fk_exam_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE question
@@ -294,3 +292,21 @@ ADD UNIQUE (room_number, building_id);
 
 ALTER TABLE class
 ADD COLUMN is_del BOOLEAN DEFAULT FALSE NOT NULL AFTER end_date;
+
+CREATE TABLE student_exam_answer (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id CHAR(11) NOT NULL,
+    exam_id INT NOT NULL,
+    question_id INT NOT NULL,
+    answer_text TEXT, -- Có thể là lựa chọn hoặc nội dung tự luận
+    is_correct BOOLEAN, -- Dùng cho câu hỏi auto chấm (MCQ, TRUE_FALSE)
+    score DOUBLE, -- Điểm chấm tay (hoặc auto nếu có)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_sea_student FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_sea_exam FOREIGN KEY (exam_id) REFERENCES exam(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_sea_question FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    
+    UNIQUE (student_id, exam_id, question_id) -- Mỗi học sinh chỉ trả lời 1 lần cho 1 câu hỏi trong 1 bài thi
+);

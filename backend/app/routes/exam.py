@@ -6,7 +6,6 @@ from app.models.question import Question
 from app.models.answer import Answer
 from app.models.classs import Class
 from app.models.class_teacher import ClassTeacher
-from app.models.grade_type import GradeType
 from app.utils.auth import auth_required, admin_required, teacher_or_admin_required
 from datetime import datetime
 
@@ -20,19 +19,15 @@ def create_exam():
 
     # Validate input
     required_fields = ['title', 'exam_date', 'duration_minutes', 'class_id', 
-                     'grade_type_id', 'exam_start_time', 'exam_end_time']
+                     'exam_start_time', 'exam_end_time']
     for field in required_fields:
         if field not in data:
             return jsonify({"message": f"Thiếu thông tin bắt buộc: {field}"}), 400
 
-    # Check if class and grade type exist
+    # Check if class exists
     class_ = Class.query.get(data['class_id'])
     if not class_:
         return jsonify({"message": "Lớp học không tồn tại"}), 404
-
-    grade_type = GradeType.query.get(data['grade_type_id'])
-    if not grade_type:
-        return jsonify({"message": "Loại điểm không tồn tại"}), 404
 
     # Kiểm tra quyền truy cập cho giáo viên
     if g.role == 'teacher':
@@ -54,7 +49,6 @@ def create_exam():
         exam_date=datetime.strptime(data['exam_date'], '%Y-%m-%d').date(),
         duration_minutes=data['duration_minutes'],
         class_id=data['class_id'],
-        grade_type_id=data['grade_type_id'],
         exam_start_time=datetime.strptime(data['exam_start_time'], '%H:%M').time(),
         exam_end_time=datetime.strptime(data['exam_end_time'], '%H:%M').time()
     )
@@ -119,7 +113,6 @@ def get_exams():
         "exam_date": exam.exam_date.strftime('%Y-%m-%d'),
         "duration_minutes": exam.duration_minutes,
         "class_id": exam.class_id,
-        "grade_type_id": exam.grade_type_id,
         "exam_start_time": exam.exam_start_time.strftime('%H:%M'),
         "exam_end_time": exam.exam_end_time.strftime('%H:%M'),
         "created_at": exam.created_at,
@@ -186,7 +179,6 @@ def get_exam(id):
         "exam_date": exam.exam_date.strftime('%Y-%m-%d'),
         "duration_minutes": exam.duration_minutes,
         "class_id": exam.class_id,
-        "grade_type_id": exam.grade_type_id,
         "exam_start_time": exam.exam_start_time.strftime('%H:%M'),
         "exam_end_time": exam.exam_end_time.strftime('%H:%M'),
         "created_at": exam.created_at,
@@ -221,11 +213,6 @@ def update_exam(id):
         exam.exam_date = datetime.strptime(data['exam_date'], '%Y-%m-%d').date()
     if 'duration_minutes' in data:
         exam.duration_minutes = data['duration_minutes']
-    if 'grade_type_id' in data:
-        grade_type = GradeType.query.get(data['grade_type_id'])
-        if not grade_type:
-            return jsonify({"message": "Loại điểm không tồn tại"}), 404
-        exam.grade_type_id = data['grade_type_id']
     if 'exam_start_time' in data:
         exam.exam_start_time = datetime.strptime(data['exam_start_time'], '%H:%M').time()
     if 'exam_end_time' in data:
@@ -315,7 +302,6 @@ def get_exams_by_class(class_id):
         "exam_date": exam.exam_date.strftime('%Y-%m-%d'),
         "duration_minutes": exam.duration_minutes,
         "class_id": exam.class_id,
-        "grade_type_id": exam.grade_type_id,
         "exam_start_time": exam.exam_start_time.strftime('%H:%M'),
         "exam_end_time": exam.exam_end_time.strftime('%H:%M'),
         "created_at": exam.created_at,

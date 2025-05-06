@@ -1,9 +1,13 @@
 from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.teacher import Teacher
+from app.models.class_teacher import ClassTeacher
+from app.models.classs import Class
+from app.models.subject import Subject
 from app.utils.auth import auth_required, admin_required, teacher_self_or_admin_required
-from datetime import datetime
+from datetime import datetime, date
 from app.ml.faces import encode_face
+import logging
 
 teacher_bp = Blueprint('teacher', __name__)
 
@@ -148,3 +152,47 @@ def delete_teacher(id):
     db.session.delete(teacher)
     db.session.commit()
     return jsonify({"message": "Teacher deleted successfully"})
+
+@teacher_bp.route('/teacher/classes', methods=['GET'])
+@auth_required
+def get_teacher_classes():
+    """Lấy danh sách lớp học mà giáo viên đang giảng dạy (bao gồm thông tin môn học)"""
+    
+    if g.role != 'teacher':
+        return jsonify({"message": "Chỉ giáo viên mới có thể sử dụng API này"}), 403
+    
+    teacher_id = g.teacher_id
+    
+    try:
+        # Join query to get classes with subject information
+        classes = db.session.query(
+            Class, Subject
+        ).join(
+            ClassTeacher, Class.id == ClassTeacher.class_id
+        ).join(
+            Subject, Class.subject_id == Subject.id
+        ).filter(
+            ClassTeacher.teacher_id == teacher_id
+        ).all()
+        
+        result = []
+        for class_, subject in classes:
+            # Check if class is active (end date >= today)
+            is_active = class_.end_date >= date.today()
+            
+            result.append({
+                "id": class_.id,
+                "code": class_.code,
+                "max_student": class_.max_student,
+                "start_date": class_.start_date.strftime('%Y-%m-%d'),
+                "end_date": class_.end_date.strftime('%Y-%m-%d'),
+                "is_active": is_active,
+                "subject_id": subject.id,
+                "subject_code": subject.code,
+                "subject_name": subject.name
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"Error retrieving teacher classes: {str(e)}")
+        return jsonify({"message": f"Error retrieving classes: {str(e)}"}), 500

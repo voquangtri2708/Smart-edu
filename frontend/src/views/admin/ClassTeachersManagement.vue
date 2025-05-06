@@ -237,7 +237,7 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Toast, Modal } from 'bootstrap';
 import api from '@/utils/api';
-import Pagination from '@/components/common/Pagination.vue';
+import Pagination from '@/components/Pagination.vue';
 import { debounce } from 'lodash';
 
 export default {
