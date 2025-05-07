@@ -127,10 +127,15 @@ def create_feedback():
         
         # Dự đoán sentiment sử dụng model
         try:
-            sentiment_label = prediction(content)
-            sentiment_map = {0: "NEGATIVE", 1: "NEUTRAL", 2: "POSITIVE"}
-            predicted_sentiment = sentiment_map[sentiment_label]
-            logging.info(f"Sentiment prediction: {predicted_sentiment}")
+            probs, sentiment_label = prediction(content)
+            if sentiment_label is None:
+                # Nếu không nhận dạng được từ nào trong từ điển
+                logging.warning(f"Input text has no words in vocabulary: {content}")
+                predicted_sentiment = "NEUTRAL"  # Mặc định là trung lập
+            else:
+                sentiment_map = {0: "NEGATIVE", 1: "NEUTRAL", 2: "POSITIVE"}
+                predicted_sentiment = sentiment_map[sentiment_label]
+                logging.info(f"Sentiment prediction: {predicted_sentiment}, probabilities: {probs}")
         except Exception as e:
             logging.error(f"Sentiment prediction error: {str(e)}")
             predicted_sentiment = "NEUTRAL"  # Default if prediction fails
