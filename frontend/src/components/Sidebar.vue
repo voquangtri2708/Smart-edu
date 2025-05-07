@@ -90,6 +90,9 @@
           <router-link to="/teacher/exams" class="submenu-item" active-class="active">
             <i class="bi bi-file-earmark-text me-2"></i>Quản lý đợt thi
           </router-link>
+          <router-link to="/teacher/exams/grading" class="submenu-item" active-class="active">
+            <i class="bi bi-check-square me-2"></i>Chấm điểm bài thi
+          </router-link>
         </div>
         
         <!-- Thêm mới: Thông tin cá nhân -->
@@ -168,6 +171,9 @@
           </router-link>
           <router-link to="/admin/questions" class="submenu-item" active-class="active">
             <i class="bi bi-question-circle me-2"></i>Ngân hàng câu hỏi
+          </router-link>
+          <router-link to="/admin/grade-types" class="submenu-item" active-class="active">
+            <i class="bi bi-percent me-2"></i>Quản lý loại điểm
           </router-link>
         </div>
         

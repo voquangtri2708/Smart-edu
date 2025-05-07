@@ -33,7 +33,7 @@
                     <div class="col-md-6">
                       <p><strong>Lớp:</strong> {{ exam.class_code }}</p>
                       <p><strong>Ngày thi:</strong> {{ formatDate(exam.exam_date) }}</p>
-                      <p><strong>Thời gian:</strong> {{ exam.exam_start_time }} - {{ exam.exam_end_time }}</p>
+                      <p><strong>Thời gian:</strong> {{ exam.start_time }} - {{ exam.end_time }}</p>
                     </div>
                     <div class="col-md-6">
                       <p><strong>Thời lượng:</strong> {{ exam.duration_minutes }} phút</p>

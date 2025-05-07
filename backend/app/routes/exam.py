@@ -6,6 +6,7 @@ from app.models.question import Question
 from app.models.answer import Answer
 from app.models.classs import Class
 from app.models.class_teacher import ClassTeacher
+from app.models.grade_type import GradeType
 from app.utils.auth import auth_required, admin_required, teacher_or_admin_required
 from datetime import datetime
 
@@ -49,6 +50,7 @@ def create_exam():
         exam_date=datetime.strptime(data['exam_date'], '%Y-%m-%d').date(),
         duration_minutes=data['duration_minutes'],
         class_id=data['class_id'],
+        grade_type_id=data.get('grade_type_id'),
         exam_start_time=datetime.strptime(data['exam_start_time'], '%H:%M').time(),
         exam_end_time=datetime.strptime(data['exam_end_time'], '%H:%M').time()
     )
@@ -113,6 +115,7 @@ def get_exams():
         "exam_date": exam.exam_date.strftime('%Y-%m-%d'),
         "duration_minutes": exam.duration_minutes,
         "class_id": exam.class_id,
+        "grade_type_id": exam.grade_type_id,
         "exam_start_time": exam.exam_start_time.strftime('%H:%M'),
         "exam_end_time": exam.exam_end_time.strftime('%H:%M'),
         "created_at": exam.created_at,
@@ -172,6 +175,18 @@ def get_exam(id):
             
             questions.append(question_data)
     
+    # Get grade type information if available
+    grade_type_info = None
+    if exam.grade_type_id:
+        grade_type = GradeType.query.get(exam.grade_type_id)
+        if grade_type:
+            grade_type_info = {
+                "id": grade_type.id,
+                "name": grade_type.name,
+                "weight": grade_type.weight,
+                "description": grade_type.description
+            }
+    
     return jsonify({
         "id": exam.id,
         "title": exam.title,
@@ -179,6 +194,8 @@ def get_exam(id):
         "exam_date": exam.exam_date.strftime('%Y-%m-%d'),
         "duration_minutes": exam.duration_minutes,
         "class_id": exam.class_id,
+        "grade_type_id": exam.grade_type_id,
+        "grade_type": grade_type_info,
         "exam_start_time": exam.exam_start_time.strftime('%H:%M'),
         "exam_end_time": exam.exam_end_time.strftime('%H:%M'),
         "created_at": exam.created_at,
@@ -202,9 +219,9 @@ def update_exam(id):
         ).first()
         
         if not teacher_class:
-            return jsonify({"message": "Bạn không có quyền cập nhật kỳ thi của lớp học này"}), 403
-
-    # Cập nhật các thông tin kỳ thi
+            return jsonify({"message": "Bạn không có quyền cập nhật kỳ thi này"}), 403
+    
+    # Update thông tin
     if 'title' in data:
         exam.title = data['title']
     if 'description' in data:
@@ -213,33 +230,72 @@ def update_exam(id):
         exam.exam_date = datetime.strptime(data['exam_date'], '%Y-%m-%d').date()
     if 'duration_minutes' in data:
         exam.duration_minutes = data['duration_minutes']
+    if 'class_id' in data:
+        # Kiểm tra lớp mới nếu cần
+        if g.role == 'teacher' and data['class_id'] != exam.class_id:
+            # Kiểm tra xem giáo viên có dạy lớp mới không
+            new_teacher_class = ClassTeacher.query.filter_by(
+                teacher_id=g.teacher_id,
+                class_id=data['class_id']
+            ).first()
+            
+            if not new_teacher_class:
+                return jsonify({"message": "Bạn không có quyền gán kỳ thi này cho lớp học mới"}), 403
+                
+        exam.class_id = data['class_id']
+    if 'grade_type_id' in data:
+        exam.grade_type_id = data['grade_type_id']
     if 'exam_start_time' in data:
         exam.exam_start_time = datetime.strptime(data['exam_start_time'], '%H:%M').time()
     if 'exam_end_time' in data:
         exam.exam_end_time = datetime.strptime(data['exam_end_time'], '%H:%M').time()
-
-    # Cập nhật danh sách câu hỏi nếu có
-    if 'questions' in data:
-        # Xóa tất cả các câu hỏi hiện tại
-        ExamQuestion.query.filter_by(exam_id=id).delete()
+    
+    # Update exam questions if provided
+    if 'questions' in data and isinstance(data['questions'], list):
+        # Get existing questions for this exam
+        existing_questions = ExamQuestion.query.filter_by(exam_id=id).all()
+        existing_question_ids = {eq.question_id: eq for eq in existing_questions}
         
-        # Thêm danh sách câu hỏi mới
+        # Track questions that should remain
+        processed_question_ids = set()
+        
+        # Process each question in the request
         for question_data in data['questions']:
-            if 'question_id' in question_data and 'points' in question_data:
-                # Kiểm tra xem question có tồn tại không
-                question = Question.query.get(question_data['question_id'])
-                if not question:
-                    continue
+            if 'question_id' not in question_data or 'points' not in question_data:
+                continue
+            
+            question_id = question_data['question_id']
+            points = float(question_data['points'])
+            
+            # Check if question exists
+            question = Question.query.get(question_id)
+            if not question:
+                continue
                 
-                # Thêm question vào exam
-                exam_question = ExamQuestion(
-                    exam_id=exam.id,
-                    question_id=question_data['question_id'],
-                    points=question_data['points']
+            processed_question_ids.add(question_id)
+            
+            # Update existing or create new
+            if question_id in existing_question_ids:
+                # Update points if changed
+                exam_question = existing_question_ids[question_id]
+                if exam_question.points != points:
+                    exam_question.points = points
+            else:
+                # Add new question to exam
+                new_exam_question = ExamQuestion(
+                    exam_id=id,
+                    question_id=question_id,
+                    points=points
                 )
-                db.session.add(exam_question)
-
+                db.session.add(new_exam_question)
+        
+        # Delete questions that were not in the request
+        for eq in existing_questions:
+            if eq.question_id not in processed_question_ids:
+                db.session.delete(eq)
+    
     db.session.commit()
+    
     return jsonify({"message": "Exam updated successfully"})
 
 @exam_bp.route('/exams/<int:id>', methods=['DELETE'])

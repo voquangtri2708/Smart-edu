@@ -8,25 +8,7 @@
         </button>
       </div>
       
-      <div class="card-body">
-        <!-- Hiển thị thông báo -->
-        <div v-if="message" :class="'alert alert-' + messageType" role="alert">
-          <div class="d-flex align-items-start">
-            <i :class="getAlertIcon" class="me-2 mt-1 fs-5"></i>
-            <div>
-              <span v-if="!hasDetails">{{ message }}</span>
-              <template v-else>
-                <strong>{{ messageTitle }}</strong>
-                <ul class="mb-0 mt-1">
-                  <li v-for="(detail, index) in messageDetails" :key="index">
-                    {{ detail }}
-                  </li>
-                </ul>
-              </template>
-            </div>
-          </div>
-        </div>
-        
+      <div class="card-body">        
         <!-- Search and filter -->
         <div class="row mb-3">
           <div class="col-md-4">
@@ -293,7 +275,15 @@
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body">
-          {{ toastMessage }}
+          <div v-if="!hasDetails">{{ toastMessage }}</div>
+          <div v-else>
+            <strong>{{ toastMessage }}</strong>
+            <ul class="mb-0 mt-1">
+              <li v-for="(detail, index) in messageDetails" :key="index">
+                {{ detail }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -675,83 +665,63 @@ export default {
     
     showMessage(text, type = 'success', details = null) {
       // Cập nhật thông tin cho toast notification
-      this.toastTitle = "Thông báo";
+      this.toastTitle = type === "danger" ? "Lỗi" : "Thông báo";
       this.toastMessage = text;
       this.toastType = type === "danger" ? "error" : type;
+      this.messageDetails = [];
       
-      // Vẫn giữ lại cách hiển thị alert hiện tại cho trường hợp có chi tiết phức tạp
-      if (details || (text && text.includes(":"))) {
-        this.message = text;
-        this.messageType = type;
-        this.messageDetails = [];
+      // Xử lý khi message có dạng "Tiêu đề: Chi tiết"
+      if (text && text.includes(":")) {
+        const parts = text.split(":");
+        this.messageTitle = parts[0].trim();
         
-        // Xử lý khi message có dạng "Tiêu đề: Chi tiết"
-        if (text && text.includes(":")) {
-          const parts = text.split(":");
-          this.messageTitle = parts[0].trim();
+        if (parts.length > 1) {
+          // Kiểm tra nếu chi tiết chứa từ khóa về các loại xung đột
+          const detailText = parts.slice(1).join(":").trim();
           
-          if (parts.length > 1) {
-            // Kiểm tra nếu chi tiết chứa từ khóa về các loại xung đột
-            const detailText = parts.slice(1).join(":").trim();
+          if (detailText.includes("sinh viên") || detailText.includes("giáo viên") || 
+              detailText.includes("lớp học") || detailText.includes("phòng học")) {
             
-            if (detailText.includes("sinh viên") || detailText.includes("giáo viên") || 
-                detailText.includes("lớp học") || detailText.includes("phòng học")) {
-              
-              // Parse các thông tin xung đột
-              this.parseConflictDetails(detailText);
-            } else {
-              // Nếu không phải dạng xung đột đặc biệt, hiển thị nguyên text
-              this.messageDetails = [detailText];
-            }
-          }
-        } else {
-          this.messageTitle = text;
-        }
-        
-        // Nếu có thông tin chi tiết bổ sung được cung cấp
-        if (details) {
-          if (Array.isArray(details)) {
-            this.messageDetails = [...this.messageDetails, ...details];
+            // Parse các thông tin xung đột
+            this.parseConflictDetails(detailText);
           } else {
-            this.messageDetails.push(details);
+            // Nếu không phải dạng xung đột đặc biệt, hiển thị nguyên text
+            this.messageDetails = [detailText];
           }
         }
-        
-        // Tăng thời gian hiển thị nếu có chi tiết
-        const displayTime = this.messageDetails.length > 0 ? 6000 : 3000;
-        
-        setTimeout(() => {
-          this.message = '';
-          this.messageTitle = '';
-          this.messageDetails = [];
-        }, displayTime);
-      } else {
-        // Nếu là thông báo đơn giản, chỉ hiển thị toast
-        this.message = '';
-        
-        // Hiển thị Toast notification
-        const toastEl = this.$refs.toastNotification;
-        if (toastEl) {
-          const toast = new Toast(toastEl);
-          toast.show();
+      }
+      
+      // Nếu có thông tin chi tiết bổ sung được cung cấp
+      if (details) {
+        if (Array.isArray(details)) {
+          this.messageDetails = [...this.messageDetails, ...details];
+        } else {
+          this.messageDetails.push(details);
         }
+      }
+      
+      // Hiển thị Toast notification
+      const toastEl = this.$refs.toastNotification;
+      if (toastEl) {
+        const toast = new Toast(toastEl);
+        toast.show();
+        
+        // Đặt timeout để reset thông báo
+        setTimeout(() => {
+          this.messageDetails = [];
+        }, 5000);
       }
     },
     
     parseConflictDetails(detailText) {
-      // Xử lý các dạng thông báo lỗi phổ biến
       if (detailText.includes("sinh viên có lịch trùng")) {
-        this.messageDetails.push("Có sinh viên đã được xếp lịch học vào cùng thời điểm này");
-        this.messageDetails.push(detailText);
-        this.messageDetails.push("Vui lòng chọn thời điểm khác hoặc thay đổi danh sách sinh viên của lớp");
+        this.messageDetails = ["Sinh viên đã có lịch học vào thời điểm này"];
       }
       else if (detailText.includes("giáo viên có lịch trùng")) {
-        this.messageDetails.push("Có giáo viên đã được phân công dạy vào cùng thời điểm này");
-        this.messageDetails.push(detailText);
-        this.messageDetails.push("Vui lòng chọn thời điểm khác hoặc phân công giáo viên khác");
+        this.messageDetails = ["Giáo viên đã có lịch dạy vào thời điểm này"];
       }
       else {
-        this.messageDetails.push(detailText);
+        this.messageDetails = ["Có lỗi xảy ra! Vui lòng kiểm tra lại thông tin"];
       }
     },
     

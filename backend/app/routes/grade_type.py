@@ -33,8 +33,7 @@ def create_grade_type():
     new_grade_type = GradeType(
         name=data['name'],
         weight=data['weight'],
-        description=data.get('description'),
-        subject_id=data['subject_id']
+        description=data.get('description')
     )
     db.session.add(new_grade_type)
     db.session.commit()
@@ -48,10 +47,7 @@ def get_grade_types():
         "id": grade_type.id,
         "name": grade_type.name,
         "weight": grade_type.weight,
-        "description": grade_type.description,
-        "subject_id": grade_type.subject_id,
-        "created_at": grade_type.created_at,
-        "updated_at": grade_type.updated_at
+        "description": grade_type.description
     } for grade_type in grade_types])
 
 @grade_type_bp.route('/grade_types/<int:id>', methods=['GET'])
@@ -62,10 +58,7 @@ def get_grade_type(id):
         "id": grade_type.id,
         "name": grade_type.name,
         "weight": grade_type.weight,
-        "description": grade_type.description,
-        "subject_id": grade_type.subject_id,
-        "created_at": grade_type.created_at,
-        "updated_at": grade_type.updated_at
+        "description": grade_type.description
     })
 
 @grade_type_bp.route('/grade_types/<int:id>', methods=['PUT'])
@@ -97,8 +90,6 @@ def update_grade_type(id):
         grade_type.weight = data['weight']
     if 'description' in data:
         grade_type.description = data['description']
-    if 'subject_id' in data:
-        grade_type.subject_id = data['subject_id']
     
     db.session.commit()
     return jsonify({"message": "Grade type updated successfully"})
@@ -137,10 +128,7 @@ def get_grade_types_by_subject(subject_id):
         "id": grade_type.id,
         "name": grade_type.name,
         "weight": grade_type.weight,
-        "description": grade_type.description,
-        "subject_id": grade_type.subject_id,
-        "created_at": grade_type.created_at,
-        "updated_at": grade_type.updated_at
+        "description": grade_type.description
     } for grade_type in grade_types])
 
 # API lấy loại điểm theo lớp học
@@ -158,8 +146,5 @@ def get_grade_types_by_class(class_id):
         "id": grade_type.id,
         "name": grade_type.name,
         "weight": grade_type.weight,
-        "description": grade_type.description,
-        "subject_id": grade_type.subject_id,
-        "created_at": grade_type.created_at,
-        "updated_at": grade_type.updated_at
+        "description": grade_type.description
     } for grade_type in grade_types])

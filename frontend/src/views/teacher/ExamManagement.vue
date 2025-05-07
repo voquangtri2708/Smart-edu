@@ -75,17 +75,20 @@
                 <td>{{ exam.duration_minutes }} phút</td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <button @click="viewExamDetails(exam)" class="btn btn-outline-info" title="Xem chi tiết">
-                      <i class="bi bi-eye"></i>
+                    <button @click="viewExamDetails(exam)" class="btn btn-sm btn-info me-1">
+                      <i class="bi bi-eye"></i> Xem
                     </button>
-                    <button @click="editExam(exam)" class="btn btn-outline-primary" title="Sửa đợt thi">
-                      <i class="bi bi-pencil-square"></i>
+                    <button @click="editExam(exam)" class="btn btn-sm btn-warning me-1">
+                      <i class="bi bi-pencil"></i> Sửa
                     </button>
-                    <button @click="manageExamQuestions(exam)" class="btn btn-outline-success" title="Quản lý câu hỏi">
-                      <i class="bi bi-list-check"></i>
+                    <button @click="manageExamQuestions(exam.id)" class="btn btn-sm btn-primary me-1">
+                      <i class="bi bi-card-list"></i> Câu hỏi
                     </button>
-                    <button @click="confirmDelete(exam)" class="btn btn-outline-danger" title="Xóa đợt thi">
-                      <i class="bi bi-trash"></i>
+                    <button @click="gradeExam(exam.id)" class="btn btn-sm btn-success me-1">
+                      <i class="bi bi-check-square"></i> Chấm điểm
+                    </button>
+                    <button @click="confirmDelete(exam)" class="btn btn-sm btn-danger">
+                      <i class="bi bi-trash"></i> Xóa
                     </button>
                   </div>
                 </td>
@@ -126,6 +129,16 @@
                       {{ cls.code }} - {{ cls.subject_name }}
                     </option>
                   </select>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Loại điểm</label>
+                <select class="form-select" v-model="currentExam.grade_type_id">
+                  <option value="">-- Không áp dụng điểm --</option>
+                  <option v-for="gradeType in gradeTypes" :key="gradeType.id" :value="gradeType.id">
+                    {{ gradeType.name }} ({{ (gradeType.weight * 100).toFixed(0) }}%)
+                  </option>
+                </select>
               </div>
               
               <div class="mb-3">
@@ -181,7 +194,10 @@
               <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">{{ viewExam.title }}</h5>
-                  <span class="badge bg-primary">{{ getClassCode(viewExam.class_id) }}</span>
+                  <div>
+                    <span class="badge bg-primary me-2">{{ getClassCode(viewExam.class_id) }}</span>
+                    <span v-if="viewExam.grade_type" class="badge bg-info">{{ viewExam.grade_type.name }}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-body">
@@ -304,6 +320,7 @@ export default {
     // State
     const exams = ref([]);
     const teacherClasses = ref([]);
+    const gradeTypes = ref([]);
     const loading = ref(false);
     const processing = ref(false);
     const searchQuery = ref('');
@@ -315,6 +332,7 @@ export default {
       exam_date: new Date().toISOString().split('T')[0],
       duration_minutes: 60,
       class_id: '',
+      grade_type_id: '',
       exam_start_time: '08:00',
       exam_end_time: '09:00'
     });
@@ -355,6 +373,7 @@ export default {
       }
       
       await fetchTeacherClasses();
+      await fetchGradeTypes();
       await fetchExams();
     });
     
@@ -406,6 +425,16 @@ export default {
       }
     };
     
+    const fetchGradeTypes = async () => {
+      try {
+        const response = await api.get('/grade_types');
+        gradeTypes.value = response.data || [];
+      } catch (error) {
+        console.error('Error fetching grade types:', error);
+        showMessage('Đã có lỗi xảy ra khi tải dữ liệu loại điểm. Vui lòng thử lại sau.', 'danger', 'Lỗi');
+      }
+    };
+    
     const fetchExamQuestions = async (examId) => {
       try {
         const response = await api.get(`/exams/${examId}/questions`);
@@ -438,6 +467,7 @@ export default {
         exam_date: new Date().toISOString().split('T')[0],
         duration_minutes: 60,
         class_id: '',
+        grade_type_id: '',
         exam_start_time: '08:00',
         exam_end_time: '09:00'
       };
@@ -505,7 +535,19 @@ export default {
     };
     
     const viewExamDetails = async (exam) => {
-      viewExam.value = exam;
+      // If grade_type is not included in the exam object from the list view,
+      // fetch the full exam details to get it
+      if (!exam.grade_type && exam.grade_type_id) {
+        try {
+          const response = await api.get(`/exams/${exam.id}`);
+          viewExam.value = response.data;
+        } catch (error) {
+          console.error('Error fetching exam details:', error);
+          viewExam.value = exam;
+        }
+      } else {
+        viewExam.value = exam;
+      }
       
       // Fetch exam questions
       viewExamQuestions.value = await fetchExamQuestions(exam.id);
@@ -513,16 +555,23 @@ export default {
       viewExamModalInstance.show();
     };
     
-    const manageExamQuestions = (exam) => {
+    const manageExamQuestions = (examId) => {
       router.push({ 
         name: 'exam-questions', 
-        params: { examId: exam.id } 
+        params: { examId: examId } 
+      });
+    };
+    
+    const gradeExam = (examId) => {
+      router.push({ 
+        name: 'exam-grading', 
+        params: { examId: examId } 
       });
     };
     
     const manageExamQuestionsFromView = () => {
       if (viewExam.value) {
-        manageExamQuestions(viewExam.value);
+        manageExamQuestions(viewExam.value.id);
       }
     };
     
@@ -613,6 +662,7 @@ export default {
     return {
       exams,
       teacherClasses,
+      gradeTypes,
       loading,
       processing,
       searchQuery,
@@ -639,6 +689,7 @@ export default {
       updateExam,
       viewExamDetails,
       manageExamQuestions,
+      gradeExam,
       manageExamQuestionsFromView,
       confirmDelete,
       deleteExam,

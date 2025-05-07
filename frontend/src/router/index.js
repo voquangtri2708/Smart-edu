@@ -16,6 +16,7 @@ import ExamQuestionManager from '@/views/teacher/ExamQuestionManager.vue';
 import StudentExamView from '@/views/student/StudentExamView.vue';
 import StudentExamTakeView from '@/views/student/StudentExamTakeView.vue';
 import StudentExamResultView from '@/views/student/StudentExamResultView.vue';
+import TeacherExamGradingView from '@/views/teacher/TeacherExamGradingView.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -31,6 +32,9 @@ const AdminClassStudentsManagement = () => import('@/views/admin/ClassStudentsMa
 const AdminClassTeachersManagement = () => import('@/views/admin/ClassTeachersManagement.vue');
 const StudentProfile = () => import('@/views/profile/StudentProfile.vue');
 const TeacherProfile = () => import('@/views/profile/TeacherProfile.vue');
+
+// New import for GradeTypeManagement
+import GradeTypeManagement from '@/views/admin/GradeTypeManagement.vue';
 
 const routes = [
   { path: "/", component: HomePageView },
@@ -124,6 +128,25 @@ const routes = [
     name: "exam-questions",
     component: ExamQuestionManager,
     props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/exams/:examId/grading",
+    name: "exam-grading",
+    component: TeacherExamGradingView,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/exams/grading",
+    name: "exams-grading-list",
+    component: () => import('@/views/teacher/TeacherExamsGradingList.vue'),
     meta: { 
       requiresAuth: true, 
       requiredRole: "teacher" 
@@ -275,6 +298,15 @@ const routes = [
       const userRole = localStorage.getItem('user_role');
       if (userRole === 'teacher') return '/teacher/exams';
       return '/';
+    }
+  },
+  {
+    path: '/admin/grade-types',
+    name: 'admin-grade-types',
+    component: GradeTypeManagement,
+    meta: {
+      requiresAuth: true,
+      requiredRole: 'admin'
     }
   },
 ];

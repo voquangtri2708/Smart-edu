@@ -4,6 +4,8 @@ from app.models.exam import Exam
 from app.models.question import Question
 from app.models.student import Student
 from app.models.student_exam_answer import StudentExamAnswer
+from app.models.exam_question import ExamQuestion
+from app.models.answer import Answer
 from app.utils.auth import teacher_required
 from sqlalchemy.exc import SQLAlchemyError
 import logging
@@ -40,10 +42,11 @@ def get_student_answers_for_exam(exam_id):
                 'message': 'You are not authorized to view answers for this exam'
             }), 403
             
-        # Get all questions for this exam
-        questions = db.session.query(Question).\
-            filter(Question.exam_id == exam_id).\
-            order_by(Question.order).all()
+        # Get all questions for this exam using the join table
+        exam_questions = db.session.query(Question, ExamQuestion).\
+            join(ExamQuestion, Question.id == ExamQuestion.question_id).\
+            filter(ExamQuestion.exam_id == exam_id).\
+            all()
             
         # Get all student answers for this exam
         answers = db.session.query(
@@ -62,7 +65,7 @@ def get_student_answers_for_exam(exam_id):
                 student_answers[student_id] = {
                     'student_id': student_id,
                     'student_name': f"{student.first_name} {student.last_name}",
-                    'student_code': student.student_code,
+                    'student_code': student.id,
                     'answers': [],
                     'total_score': 0
                 }
@@ -86,22 +89,36 @@ def get_student_answers_for_exam(exam_id):
         # Sort by student name
         result.sort(key=lambda x: x['student_name'])
         
+        # Prepare question data with correct answers
+        question_data = []
+        for question, exam_question in exam_questions:
+            # Get correct answers for multiple choice or true/false questions
+            correct_answers = []
+            if question.question_type in ['MULTIPLE_CHOICE', 'TRUE_FALSE']:
+                correct_answers = db.session.query(Answer).\
+                    filter(Answer.question_id == question.id, Answer.is_correct == True).\
+                    all()
+            
+            question_data.append({
+                'id': question.id,
+                'question_text': question.question_text,
+                'question_type': question.question_type,
+                'points': exam_question.points,
+                'correct_answers': [
+                    {'id': answer.id, 'text': answer.answer_text}
+                    for answer in correct_answers
+                ] if correct_answers else []
+            })
+        
         return jsonify({
             'success': True,
             'message': 'Student answers retrieved successfully',
             'exam': {
                 'id': exam.id,
                 'title': exam.title,
-                'description': exam.description,
-                'total_points': exam.total_points
+                'description': exam.description
             },
-            'questions': [{
-                'id': q.id,
-                'question_text': q.question_text,
-                'question_type': q.question_type,
-                'correct_answer': q.correct_answer,
-                'point_value': q.point_value
-            } for q in questions],
+            'questions': question_data,
             'student_answers': result
         }), 200
     
@@ -194,11 +211,23 @@ def grade_student_answer(answer_id):
                 'message': 'Question not found'
             }), 404
             
-        # Validate score is not greater than question point value
-        if score > question.point_value:
+        # Get the exam question to find the points value
+        exam_question = db.session.query(ExamQuestion).filter(
+            ExamQuestion.exam_id == student_answer.exam_id,
+            ExamQuestion.question_id == student_answer.question_id
+        ).first()
+        
+        if not exam_question:
             return jsonify({
                 'success': False,
-                'message': f'Score cannot exceed question point value of {question.point_value}'
+                'message': 'Exam question not found'
+            }), 404
+            
+        # Validate score is not greater than question point value
+        if score > exam_question.points:
+            return jsonify({
+                'success': False,
+                'message': f'Score cannot exceed question point value of {exam_question.points}'
             }), 400
             
         # Validate score is not negative
@@ -212,7 +241,7 @@ def grade_student_answer(answer_id):
         student_answer.score = score
         
         # For multiple choice and true/false questions, update is_correct based on score
-        if question.question_type in ['multiple_choice', 'true_false']:
+        if question.question_type in ['MULTIPLE_CHOICE', 'TRUE_FALSE']:
             student_answer.is_correct = (score > 0)
             
         db.session.commit()

@@ -8,6 +8,7 @@ class Exam(db.Model):
     exam_date = db.Column(db.Date, nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=False)
     class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+    grade_type_id = db.Column(db.Integer, db.ForeignKey('grade_type.id'), nullable=True)
     exam_start_time = db.Column(db.Time, nullable=False)
     exam_end_time = db.Column(db.Time, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -15,6 +16,7 @@ class Exam(db.Model):
     
     # Relationships
     questions = db.relationship('ExamQuestion', backref='exam', cascade='all, delete-orphan')
+    grade_type = db.relationship('GradeType', backref='exams')
     
     def __repr__(self):
         return f'<Exam {self.title}>' 

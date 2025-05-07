@@ -204,11 +204,13 @@ CREATE TABLE exam
     exam_date DATE NOT NULL,
     duration_minutes INT NOT NULL,
     class_id INT NOT NULL,
+    grade_type_id INT NOT NULL,
     exam_start_time TIME NOT NULL,
     exam_end_time TIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_exam_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT fk_exam_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_exam_grade_type FOREIGN KEY (grade_type_id) REFERENCES grade_type (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE question
