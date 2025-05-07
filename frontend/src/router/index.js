@@ -17,6 +17,7 @@ import StudentExamView from '@/views/student/StudentExamView.vue';
 import StudentExamTakeView from '@/views/student/StudentExamTakeView.vue';
 import StudentExamResultView from '@/views/student/StudentExamResultView.vue';
 import TeacherExamGradingView from '@/views/teacher/TeacherExamGradingView.vue';
+import TeacherGradeEntry from '@/views/teacher/TeacherGradeEntry.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -147,6 +148,15 @@ const routes = [
     path: "/teacher/exams/grading",
     name: "exams-grading-list",
     component: () => import('@/views/teacher/TeacherExamsGradingList.vue'),
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/grade-entry",
+    name: "teacher-grade-entry",
+    component: TeacherGradeEntry,
     meta: { 
       requiresAuth: true, 
       requiredRole: "teacher" 

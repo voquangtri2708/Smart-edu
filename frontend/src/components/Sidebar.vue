@@ -81,7 +81,7 @@
           <router-link to="/teacher/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/teacher/grade-entry" class="submenu-item" active-class="active">
             <i class="bi bi-pencil-square me-2"></i>Nhập điểm sinh viên
           </router-link>
           <router-link to="/teacher/questions" class="submenu-item" active-class="active">
@@ -269,6 +269,8 @@ const highlightActiveMenu = () => {
   } else if (path.includes('student/schedule')) {
     menuOpen.value.study = true;
   } else if (path.includes('teacher/schedule')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/grade-entry')) {
     menuOpen.value.teaching = true;
   } else if (path.includes('teacher/questions')) {
     menuOpen.value.teaching = true;
