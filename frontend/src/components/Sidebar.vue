@@ -25,7 +25,7 @@
           <router-link to="/student/exams" class="submenu-item" active-class="active">
             <i class="bi bi-journal-check me-2"></i>Lịch kiểm tra
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/student/grades" class="submenu-item" active-class="active">
             <i class="bi bi-table me-2"></i>Bảng điểm
           </router-link>
         </div>
@@ -267,6 +267,10 @@ const highlightActiveMenu = () => {
   } else if (path.includes('/subjects')) {
     menuOpen.value.study = true;
   } else if (path.includes('student/schedule')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('student/grades')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('student/exams')) {
     menuOpen.value.study = true;
   } else if (path.includes('teacher/schedule')) {
     menuOpen.value.teaching = true;

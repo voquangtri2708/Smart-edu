@@ -37,6 +37,9 @@ const TeacherProfile = () => import('@/views/profile/TeacherProfile.vue');
 // New import for GradeTypeManagement
 import GradeTypeManagement from '@/views/admin/GradeTypeManagement.vue';
 
+// New import for StudentGradesView
+import StudentGradesView from '@/views/student/StudentGradesView.vue';
+
 const routes = [
   { path: "/", component: HomePageView },
   { path: "/login", component: Login },
@@ -90,6 +93,15 @@ const routes = [
     name: "student-exam-result",
     component: StudentExamResultView,
     props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/grades",
+    name: "student-grades",
+    component: StudentGradesView,
     meta: { 
       requiresAuth: true, 
       requiredRole: "student" 
