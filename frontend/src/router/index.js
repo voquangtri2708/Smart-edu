@@ -18,6 +18,8 @@ import StudentExamTakeView from '@/views/student/StudentExamTakeView.vue';
 import StudentExamResultView from '@/views/student/StudentExamResultView.vue';
 import TeacherExamGradingView from '@/views/teacher/TeacherExamGradingView.vue';
 import TeacherGradeEntry from '@/views/teacher/TeacherGradeEntry.vue';
+import TeacherAttendanceView from '@/views/teacher/TeacherAttendanceView.vue';
+import StudentAttendanceView from '@/views/student/StudentAttendanceView.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -70,6 +72,15 @@ const routes = [
     }
   },
   {
+    path: "/student/attendance",
+    name: "student-attendance",
+    component: StudentAttendanceView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
     path: "/student/exams",
     name: "student-exam-schedule",
     component: StudentExamView,
@@ -113,6 +124,15 @@ const routes = [
     path: "/teacher/schedule",
     name: "teacher-schedule",
     component: TeacherScheduleView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/attendance",
+    name: "teacher-attendance",
+    component: TeacherAttendanceView,
     meta: { 
       requiresAuth: true, 
       requiredRole: "teacher" 

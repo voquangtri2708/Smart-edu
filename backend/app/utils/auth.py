@@ -32,6 +32,30 @@ def auth_required(f):
             return jsonify({"message": "Token không hợp lệ"}), 401
     return decorated_function
 
+def get_current_user():
+    """
+    Lấy thông tin người dùng hiện tại từ Flask g object
+    Trả về một từ điển chứa:
+    - user_id: ID của tài khoản người dùng
+    - role: Vai trò (admin, student, teacher)
+    - id: student_id hoặc teacher_id tùy thuộc vào role
+    """
+    if not hasattr(g, 'user_id'):
+        return None
+    
+    user = {
+        "user_id": g.user_id,
+        "role": g.role
+    }
+    
+    # Thêm student_id hoặc teacher_id tùy thuộc vào role
+    if g.role == 'student' and hasattr(g, 'student_id'):
+        user["id"] = g.student_id
+    elif g.role == 'teacher' and hasattr(g, 'teacher_id'):
+        user["id"] = g.teacher_id
+    
+    return user
+
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):

@@ -22,6 +22,9 @@
           <router-link to="/student/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3 me-2"></i>Lịch học
           </router-link>
+          <router-link to="/student/attendance" class="submenu-item" active-class="active">
+            <i class="bi bi-check-circle me-2"></i>Điểm danh
+          </router-link>
           <router-link to="/student/exams" class="submenu-item" active-class="active">
             <i class="bi bi-journal-check me-2"></i>Lịch kiểm tra
           </router-link>
@@ -80,6 +83,9 @@
           </router-link>
           <router-link to="/teacher/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
+          </router-link>
+          <router-link to="/teacher/attendance" class="submenu-item" active-class="active">
+            <i class="bi bi-check-circle me-2"></i>Quản lý điểm danh
           </router-link>
           <router-link to="/teacher/grade-entry" class="submenu-item" active-class="active">
             <i class="bi bi-pencil-square me-2"></i>Nhập điểm sinh viên
@@ -268,11 +274,15 @@ const highlightActiveMenu = () => {
     menuOpen.value.study = true;
   } else if (path.includes('student/schedule')) {
     menuOpen.value.study = true;
+  } else if (path.includes('student/attendance')) {
+    menuOpen.value.study = true;
   } else if (path.includes('student/grades')) {
     menuOpen.value.study = true;
   } else if (path.includes('student/exams')) {
     menuOpen.value.study = true;
   } else if (path.includes('teacher/schedule')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/attendance')) {
     menuOpen.value.teaching = true;
   } else if (path.includes('teacher/grade-entry')) {
     menuOpen.value.teaching = true;

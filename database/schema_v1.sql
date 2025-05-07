@@ -312,3 +312,7 @@ CREATE TABLE student_exam_answer (
     
     UNIQUE (student_id, exam_id, question_id) -- Mỗi học sinh chỉ trả lời 1 lần cho 1 câu hỏi trong 1 bài thi
 );
+
+
+ALTER TABLE attendance
+ADD COLUMN ip_public VARCHAR(45) DEFAULT NULL;

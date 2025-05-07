@@ -10,6 +10,7 @@ class Attendance(db.Model):
     status = db.Column(db.Enum('PRESENT', 'ABSENT', 'EXCUSED'), nullable=False)
     recorded_by = db.Column(db.String(11), db.ForeignKey('teacher.id'), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    ip_public = db.Column(db.String(45), nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 

@@ -218,6 +218,7 @@ def create_schedule():
 @schedule_bp.route('/schedules', methods=['GET'])
 @auth_required
 def get_schedules():
+    """Lấy danh sách tất cả các lịch học với thông tin chi tiết"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     include_deleted = request.args.get('include_deleted', 'false').lower() == 'true'
@@ -586,3 +587,68 @@ def delete_schedule(id):
     db.session.delete(schedule)
     db.session.commit()
     return jsonify({"message": "Lịch học đã được xóa thành công"})
+
+@schedule_bp.route('/class/<int:class_id>/schedules', methods=['GET'])
+@auth_required
+def get_class_schedules(class_id):
+    """Lấy danh sách lịch học của một lớp học cụ thể"""
+    try:
+        # Kiểm tra lớp học có tồn tại và không bị đánh dấu xóa
+        class_obj = Class.query.get(class_id)
+        if not class_obj:
+            return jsonify({"error": "Lớp học không tồn tại"}), 404
+        
+        # Lấy ngày hiện tại
+        current_date = date.today()
+        
+        # Kiểm tra nếu có tham số specific_date trong query
+        specific_date_str = request.args.get('specific_date')
+        if specific_date_str:
+            try:
+                # Nếu có tham số, sử dụng ngày từ tham số
+                current_date = datetime.strptime(specific_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass  # Sử dụng ngày hiện tại nếu định dạng không hợp lệ
+        
+        # Lấy tất cả lịch học của lớp này VÀ ngày hiện tại
+        schedules = Schedule.query.filter(
+            Schedule.class_id == class_id,
+            Schedule.specific_date == current_date
+        ).all()
+        
+        result = []
+        for schedule in schedules:
+            # Thông tin phòng học
+            classroom = Classroom.query.get(schedule.classroom_id)
+            building = Building.query.get(classroom.building_id) if classroom else None
+            campus = Campus.query.get(building.campus_id) if building else None
+            
+            # Chuyển đổi từ enum sang tên đầy đủ của ngày trong tuần
+            day_names = {
+                'MON': 'Thứ hai',
+                'TUE': 'Thứ ba',
+                'WED': 'Thứ tư',
+                'THU': 'Thứ năm',
+                'FRI': 'Thứ sáu',
+                'SAT': 'Thứ bảy',
+                'SUN': 'Chủ nhật'
+            }
+            
+            result.append({
+                "id": schedule.id,
+                "class_id": schedule.class_id,
+                "day_of_week": day_names.get(schedule.day_of_week, schedule.day_of_week),
+                "start_time": format_time(schedule.start_time),
+                "end_time": format_time(schedule.end_time),
+                "specific_date": format_date(schedule.specific_date),
+                "classroom_id": schedule.classroom_id,
+                "room_number": classroom.room_number if classroom else None,
+                "building_id": building.id if building else None,
+                "building_name": building.name if building else None,
+                "campus_id": campus.id if campus else None,
+                "campus_name": campus.name if campus else None
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
