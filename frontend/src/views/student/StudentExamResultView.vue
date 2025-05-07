@@ -118,7 +118,7 @@
                             'text-success fw-bold': answer.is_correct,
                             'text-danger': !answer.is_correct && question.student_answer == answer.id
                           }">
-                            {{ answer.answer_text }}
+                            {{ answer.text }}
                             <i v-if="answer.is_correct" class="bi bi-check-circle-fill text-success ms-1"></i>
                             <i v-if="!answer.is_correct && question.student_answer == answer.id" class="bi bi-x-circle-fill text-danger ms-1"></i>
                           </label>
@@ -138,7 +138,7 @@
                             'text-success fw-bold': answer.is_correct,
                             'text-danger': !answer.is_correct && question.student_answer == answer.id
                           }">
-                            {{ answer.answer_text }}
+                            {{ answer.text }}
                             <i v-if="answer.is_correct" class="bi bi-check-circle-fill text-success ms-1"></i>
                             <i v-if="!answer.is_correct && question.student_answer == answer.id" class="bi bi-x-circle-fill text-danger ms-1"></i>
                           </label>
@@ -267,7 +267,7 @@ export default {
       
       try {
         const response = await api.get(`/student/exams/${examId}`);
-        exam.value = response.data;
+        exam.value = response.data.exam;
       } catch (error) {
         console.error('Error fetching exam result:', error);
         error.value = error.response?.data?.message || 'Đã xảy ra lỗi khi tải kết quả bài kiểm tra.';

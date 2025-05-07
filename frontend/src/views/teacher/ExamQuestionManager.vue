@@ -504,27 +504,31 @@ export default {
     
     const addSelectedQuestions = async () => {
       if (selectedQuestions.value.length === 0) return;
-      
       processing.value = true;
       try {
-        // Prepare the questions data for the API
-        const questions = selectedQuestions.value.map(q => ({
+        // Lấy danh sách câu hỏi hiện tại trong đề thi
+        const currentQuestions = examQuestions.value.map(q => ({
           question_id: q.id,
           points: parseFloat(q.points)
         }));
-        
+        // Lấy danh sách câu hỏi mới được chọn (loại bỏ trùng lặp)
+        const newQuestions = selectedQuestions.value
+          .filter(q => !currentQuestions.some(cq => cq.question_id === q.id))
+          .map(q => ({
+            question_id: q.id,
+            points: parseFloat(q.points)
+          }));
+        // Gộp lại danh sách câu hỏi cũ và mới
+        const questions = [...currentQuestions, ...newQuestions];
         // Format the data as expected by the backend
         const data = {
           questions: questions
         };
-        
         // Update the exam with the new questions
         await api.put(`/exams/${examId}`, data);
-        
         // Close the modal and refresh the exam questions
         addQuestionsModalInstance.hide();
         await fetchExamQuestions();
-        
         showMessage('Câu hỏi đã được thêm vào đợt thi thành công!', 'success', 'Thành công');
       } catch (error) {
         console.error('Error adding questions to exam:', error);
@@ -535,31 +539,29 @@ export default {
     };
     
     const updateQuestionPoints = async (question) => {
-      const points = parseFloat(question.points);
-      if (isNaN(points) || points <= 0 || points > 10) {
-        showMessage('Điểm của câu hỏi phải lớn hơn 0 và nhỏ hơn hoặc bằng 10', 'warning', 'Cảnh báo');
-        return;
-      }
-      
-      try {
-        // Format the data as expected by the backend
-        const data = {
-          questions: [{
-            question_id: question.id,
-            points: points
-          }]
-        };
-        
-        // Update the exam question
-        await api.put(`/exams/${examId}`, data);
-        
-        showMessage('Điểm câu hỏi đã được cập nhật!', 'success', 'Thành công');
-      } catch (error) {
-        console.error('Error updating question points:', error);
-        showMessage('Đã có lỗi xảy ra khi cập nhật điểm. Vui lòng thử lại sau.', 'danger', 'Lỗi');
-        await fetchExamQuestions(); // Reload to get the original values
-      }
-    };
+    const points = parseFloat(question.points);
+    if (isNaN(points) || points <= 0 || points > 10) {
+      showMessage('Điểm của câu hỏi phải lớn hơn 0 và nhỏ hơn hoặc bằng 10', 'warning', 'Cảnh báo');
+      return;
+    }
+
+    try {
+      // Gửi toàn bộ danh sách câu hỏi hiện tại (với điểm mới)
+      const questions = examQuestions.value.map(q => ({
+        question_id: q.id,
+        points: q.id === question.id ? points : parseFloat(q.points)
+      }));
+
+      const data = { questions };
+      await api.put(`/exams/${examId}`, data);
+
+      showMessage('Điểm câu hỏi đã được cập nhật!', 'success', 'Thành công');
+    } catch (error) {
+      console.error('Error updating question points:', error);
+      showMessage('Đã có lỗi xảy ra khi cập nhật điểm. Vui lòng thử lại sau.', 'danger', 'Lỗi');
+      await fetchExamQuestions(); // Reload to get the original values
+    }
+  };
     
     const removeQuestion = (question) => {
       questionToRemove.value = question;

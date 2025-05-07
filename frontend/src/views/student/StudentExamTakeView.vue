@@ -18,8 +18,14 @@
           <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
               <h3>{{ exam.title || 'Bài kiểm tra' }}</h3>
-              <div>
-                <span class="badge bg-primary me-2">
+              <div class="d-flex align-items-center">
+                <button class="btn btn-outline-primary me-2" @click="manualSave" title="Lưu bài làm">
+                  <i class="bi bi-save me-1"></i>Lưu
+                </button>
+                <button class="btn btn-outline-secondary me-2" @click="reloadSavedAnswers" title="Tải lại bài làm đã lưu">
+                  <i class="bi bi-arrow-clockwise me-1"></i>Tải lại
+                </button>
+                <span class="badge bg-primary me-2 countdown-badge" :class="{'bg-warning': remainingTime <= 300, 'bg-danger': remainingTime <= 60}">
                   <i class="bi bi-clock me-1"></i>
                   <span id="countdown">{{ formatTime(remainingTime) }}</span>
                 </span>
@@ -56,7 +62,7 @@
                     <div class="col-md-6">
                       <p><strong>Lớp:</strong> {{ exam.class_code }}</p>
                       <p><strong>Ngày thi:</strong> {{ formatDate(exam.exam_date) }}</p>
-                      <p><strong>Thời gian:</strong> {{ exam.exam_start_time }} - {{ exam.exam_end_time }}</p>
+                      <p><strong>Thời gian:</strong> {{ exam.start_time || exam.exam_start_time }} - {{ exam.end_time || exam.exam_end_time }}</p>
                     </div>
                     <div class="col-md-6">
                       <p><strong>Thời lượng:</strong> {{ exam.duration_minutes }} phút</p>
@@ -107,47 +113,50 @@
                         
                         <!-- Multiple choice question -->
                         <div v-if="currentQuestion.question_type === 'MULTIPLE_CHOICE'" class="mt-3">
-                          <div v-for="answer in currentQuestion.answers" :key="answer.id" class="form-check mb-2">
-                            <input
-                              class="form-check-input"
-                              type="radio"
-                              :id="`answer-${answer.id}`"
-                              :name="`question-${currentQuestion.id}`"
-                              :value="answer.id"
-                              v-model="userAnswers[currentQuestion.id]"
-                            >
-                            <label class="form-check-label" :for="`answer-${answer.id}`">
-                              {{ answer.answer_text }}
-                            </label>
+                          <div v-if="!currentQuestion.answers || currentQuestion.answers.length === 0" class="alert alert-warning">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            Câu hỏi này chưa có đáp án.
+                          </div>
+                          <div v-else>
+                            <div v-for="answer in currentQuestion.answers" :key="answer.id" class="form-check mb-2">
+                              <input
+                                class="form-check-input"
+                                type="radio"
+                                :id="`answer-${answer.id}`"
+                                :name="`question-${currentQuestion.id}`"
+                                :value="answer.id"
+                                v-model="userAnswers[currentQuestion.id]"
+                              >
+                              <label class="form-check-label" :for="`answer-${answer.id}`">
+                                {{ answer.text || answer.answer_text }}
+                              </label>
+                            </div>
+                            <!-- Debug info -->
+                            <div v-if="DEBUG" class="mt-2 text-muted small">
+                              <pre>{{ JSON.stringify(currentQuestion.answers, null, 2) }}</pre>
+                            </div>
                           </div>
                         </div>
                         
                         <!-- True/False question -->
                         <div v-else-if="currentQuestion.question_type === 'TRUE_FALSE'" class="mt-3">
-                          <div class="form-check mb-2">
-                            <input
-                              class="form-check-input"
-                              type="radio"
-                              :id="`true-${currentQuestion.id}`"
-                              :name="`question-${currentQuestion.id}`"
-                              :value="currentQuestion.answers.find(a => a.answer_text === 'True' || a.answer_text === 'Đúng')?.id"
-                              v-model="userAnswers[currentQuestion.id]"
-                            >
-                            <label class="form-check-label" :for="`true-${currentQuestion.id}`">
-                              Đúng
-                            </label>
+                          <div v-if="DEBUG" class="mb-3 p-2 border border-info rounded text-muted small">
+                            <div>Debug - Cấu trúc đáp án:</div>
+                            <pre>{{ JSON.stringify(currentQuestion.answers, null, 2) }}</pre>
+                            <div>Giá trị đã chọn: {{ userAnswers[currentQuestion.id] }}</div>
                           </div>
-                          <div class="form-check mb-2">
+                          
+                          <div v-for="answer in currentQuestion.answers" :key="answer.id" class="form-check mb-2">
                             <input
                               class="form-check-input"
                               type="radio"
-                              :id="`false-${currentQuestion.id}`"
-                              :name="`question-${currentQuestion.id}`"
-                              :value="currentQuestion.answers.find(a => a.answer_text === 'False' || a.answer_text === 'Sai')?.id"
+                              :id="`answer-tf-${answer.id}`"
+                              :name="`question-tf-${currentQuestion.id}`"
+                              :value="answer.id"
                               v-model="userAnswers[currentQuestion.id]"
                             >
-                            <label class="form-check-label" :for="`false-${currentQuestion.id}`">
-                              Sai
+                            <label class="form-check-label" :for="`answer-tf-${answer.id}`">
+                              {{ answer.text || answer.answer_text }}
                             </label>
                           </div>
                         </div>
@@ -240,11 +249,16 @@
         </div>
       </div>
     </div>
+    
+    <!-- Thêm thông báo lưu tự động -->
+    <div class="auto-save-notification" v-if="autoSaveNotification">
+      <i class="bi bi-check-circle me-1"></i> Đã lưu
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
@@ -283,6 +297,13 @@ export default {
     const messageType = ref('success');
     const toastTitle = ref('Thông báo');
     let toastInstance = null;
+    
+    // Debug mode
+    const DEBUG = ref(false); // Set to true to show debug info
+    
+    // Thêm biến để quản lý thông báo lưu tự động
+    const autoSaveNotification = ref(false);
+    let autoSaveTimeout = null;
     
     // Computed properties
     const currentQuestion = computed(() => {
@@ -324,6 +345,10 @@ export default {
       if (countdownInterval) {
         clearInterval(countdownInterval);
       }
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+      // Không xóa localStorage để thời gian làm bài được lưu khi tải lại trang
       window.removeEventListener('beforeunload', handleBeforeUnload);
     });
     
@@ -333,11 +358,26 @@ export default {
       error.value = '';
       
       try {
+        console.log('Đang tải thông tin bài thi ID:', examId);
         const response = await api.get(`/student/exams/${examId}`);
-        exam.value = response.data;
+        console.log('Kết quả API:', response.data);
         
-        // Check if exam is active
-        if (!exam.value.is_active) {
+        // Kiểm tra phản hồi từ server
+        if (!response.data.success) {
+          error.value = response.data.message || 'Đã xảy ra lỗi khi tải bài kiểm tra.';
+          return;
+        }
+        
+        exam.value = response.data.exam;
+        
+        // Kiểm tra trạng thái bài thi
+        if (exam.value.status === 'upcoming') {
+          error.value = 'Bài kiểm tra này chưa đến thời gian làm bài.';
+          return;
+        } else if (exam.value.status === 'expired') {
+          error.value = 'Bài kiểm tra này đã kết thúc.';
+          return;
+        } else if (exam.value.status !== 'active') {
           error.value = 'Bài kiểm tra này không trong thời gian làm bài.';
           return;
         }
@@ -345,8 +385,11 @@ export default {
         // Initialize timer
         initializeTimer();
         
-        // Initialize user answers from previous answers if any
-        if (exam.value.questions) {
+        // Khôi phục câu trả lời từ localStorage nếu có
+        const hasLocalAnswers = loadAnswersFromLocalStorage();
+        
+        // Nếu không có câu trả lời từ localStorage, sử dụng câu trả lời từ server
+        if (!hasLocalAnswers && exam.value.questions) {
           exam.value.questions.forEach(question => {
             if (question.student_answer) {
               userAnswers.value[question.id] = question.student_answer;
@@ -362,12 +405,34 @@ export default {
     };
     
     const initializeTimer = () => {
-      if (!exam.value || !exam.value.exam_end_time) return;
+      if (!exam.value || !exam.value.duration_minutes) {
+        console.error('Không tìm thấy thông tin thời lượng bài thi');
+        return;
+      }
       
-      // Calculate remaining time
-      const endTime = new Date(`${exam.value.exam_date}T${exam.value.exam_end_time}`);
-      const now = new Date();
-      remainingTime.value = Math.max(0, Math.floor((endTime - now) / 1000));
+      console.log('Khởi tạo bộ đếm thời gian...');
+      console.log('Thời lượng bài thi (phút):', exam.value.duration_minutes);
+      
+      // Chuyển đổi thời lượng từ phút sang giây
+      const totalDuration = exam.value.duration_minutes * 60;
+      
+      // Kiểm tra xem đã lưu thời điểm bắt đầu làm bài chưa
+      const examStartKey = `exam_start_${examId}`;
+      let startTime = localStorage.getItem(examStartKey);
+      const now = new Date().getTime();
+      
+      if (!startTime) {
+        // Nếu chưa có thời điểm bắt đầu, lưu thời điểm hiện tại
+        startTime = now;
+        localStorage.setItem(examStartKey, startTime);
+        remainingTime.value = totalDuration;
+      } else {
+        // Nếu đã có thời điểm bắt đầu, tính thời gian đã trôi qua
+        const elapsedSeconds = Math.floor((now - parseInt(startTime)) / 1000);
+        remainingTime.value = Math.max(0, totalDuration - elapsedSeconds);
+      }
+      
+      console.log('Thời gian còn lại (giây):', remainingTime.value);
       
       // Set up countdown
       countdownInterval = setInterval(() => {
@@ -377,6 +442,17 @@ export default {
           confirmSubmit();
           return;
         }
+        
+        // Cảnh báo khi còn 5 phút
+        if (remainingTime.value === 300) {
+          showMessage('Còn 5 phút nữa hết giờ! Vui lòng chuẩn bị nộp bài.', 'warning', 'Sắp hết giờ');
+        }
+        
+        // Cảnh báo khi còn 1 phút
+        if (remainingTime.value === 60) {
+          showMessage('Còn 1 phút nữa hết giờ! Vui lòng kiểm tra và nộp bài sớm.', 'warning', 'Sắp hết giờ');
+        }
+        
         remainingTime.value -= 1;
       }, 1000);
     };
@@ -441,6 +517,10 @@ export default {
         await api.post(`/student/exams/${examId}/submit`, {
           answers: answersToSubmit
         });
+        
+        // Xóa thời điểm bắt đầu làm bài và câu trả lời khi nộp bài
+        localStorage.removeItem(`exam_start_${examId}`);
+        localStorage.removeItem(`exam_answers_${examId}`);
         
         // Hide modal
         submitModalInstance.hide();
@@ -515,6 +595,59 @@ export default {
       }, 2000);
     };
     
+    // Hàm lưu với thông báo
+    const saveAnswersToLocalStorage = () => {
+      const answersKey = `exam_answers_${examId}`;
+      localStorage.setItem(answersKey, JSON.stringify(userAnswers.value));
+      
+      // Hiển thị thông báo lưu tự động
+      autoSaveNotification.value = true;
+      
+      // Xóa thông báo sau 2 giây
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+      autoSaveTimeout = setTimeout(() => {
+        autoSaveNotification.value = false;
+      }, 2000);
+      
+      console.log('Đã lưu câu trả lời vào localStorage');
+    };
+
+    const loadAnswersFromLocalStorage = () => {
+      const answersKey = `exam_answers_${examId}`;
+      const savedAnswers = localStorage.getItem(answersKey);
+      if (savedAnswers) {
+        try {
+          userAnswers.value = JSON.parse(savedAnswers);
+          console.log('Đã khôi phục câu trả lời từ localStorage');
+          return true;
+        } catch (error) {
+          console.error('Lỗi khi khôi phục câu trả lời:', error);
+        }
+      }
+      return false;
+    };
+
+    // Theo dõi thay đổi câu trả lời để lưu tự động
+    watch(userAnswers, () => {
+      saveAnswersToLocalStorage();
+    }, { deep: true });
+
+    // Thêm nút lưu thủ công và tải lại
+    const manualSave = () => {
+      saveAnswersToLocalStorage();
+      showMessage('Bài làm của bạn đã được lưu thành công!', 'success', 'Đã lưu');
+    };
+
+    const reloadSavedAnswers = () => {
+      if (loadAnswersFromLocalStorage()) {
+        showMessage('Đã tải lại bài làm từ bản lưu.', 'info', 'Đã tải lại');
+      } else {
+        showMessage('Không tìm thấy bài làm đã lưu.', 'warning', 'Lỗi tải lại');
+      }
+    };
+
     return {
       exam,
       loading,
@@ -545,7 +678,11 @@ export default {
       formatDate,
       formatTime,
       showMessage,
-      goBack
+      goBack,
+      DEBUG,
+      autoSaveNotification,
+      manualSave,
+      reloadSavedAnswers
     };
   }
 };
@@ -575,5 +712,46 @@ export default {
 
 .modal-backdrop {
   opacity: 0.7 !important;
+}
+
+.countdown-badge {
+  font-size: 1rem;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.countdown-badge.bg-warning {
+  animation: pulse 1s infinite;
+}
+
+.countdown-badge.bg-danger {
+  animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.auto-save-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background-color: rgba(40, 167, 69, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  z-index: 1050;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 </style> 

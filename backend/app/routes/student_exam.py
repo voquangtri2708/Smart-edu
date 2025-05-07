@@ -204,6 +204,9 @@ def get_student_exam_detail(exam_id):
         # Calculate total points
         total_points = sum(eq.points for eq, _ in exam_questions)
         
+        # Check if student has submitted answers to show results
+        show_results = status == 'expired' or len(student_answers) > 0
+        
         question_list = []
         for exam_question, question in exam_questions:
             student_answer = student_answers_dict.get(question.id)
@@ -216,8 +219,8 @@ def get_student_exam_detail(exam_id):
                 answer_options = [{
                     'id': answer.id,
                     'text': answer.answer_text,
-                    # Only show correct answers if exam is expired
-                    'is_correct': answer.is_correct if status == 'expired' else None
+                    # Show correct answers if expired or student has submitted answers
+                    'is_correct': answer.is_correct if show_results else None
                 } for answer in answers]
             
             question_data = {
@@ -227,14 +230,14 @@ def get_student_exam_detail(exam_id):
                 'points': exam_question.points,
                 'answers': answer_options,
                 'student_answer': student_answer.answer_text if student_answer else None,
-                'is_correct': student_answer.is_correct if student_answer and status == 'expired' else None,
-                'score': student_answer.score if student_answer and status == 'expired' else None
+                'is_correct': student_answer.is_correct if student_answer and show_results else None,
+                'score': student_answer.score if student_answer and show_results else None
             }
             question_list.append(question_data)
             
-        # Calculate total score if exam is expired
+        # Calculate total score if exam is expired or student has submitted answers
         total_score = None
-        if status == 'expired' and student_answers:
+        if show_results and student_answers:
             total_score = sum(answer.score or 0 for answer in student_answers)
             
         result = {
