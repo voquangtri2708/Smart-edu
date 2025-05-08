@@ -4,7 +4,7 @@ Flask==3.1.0
 flask_cors==5.0.1
 flask_sqlalchemy==3.1.1
 mysql_connector_repackaged==0.3.1
-numpy==2.2.5
+numpy==1.26.4
 opencv_python==4.11.0.86
 opencv_python_headless==4.11.0.86
 Pillow==11.2.1
