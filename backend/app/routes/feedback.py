@@ -604,15 +604,16 @@ def generate_feedback_report():
         negative_percent = round((negative_feedbacks / total_feedbacks * 100), 1) if total_feedbacks > 0 else 0
         
         # Filter only negative feedbacks for Gemini analysis
-        negative_feedbacks_data = [f for f in all_feedbacks if f['sentiment'] == 'NEGATIVE'
-        ]
+        negative_feedbacks_data = [f for f in all_feedbacks if f['sentiment'] == 'NEGATIVE']
         
         if not negative_feedbacks_data:
             return jsonify({"message": "Không có phản hồi tiêu cực trong khoảng thời gian đã chọn"}), 404
         
-        # Format data for the prompt - only send negative feedbacks to Gemini
-        formatted_data = json.dumps(negative_feedbacks_data, ensure_ascii=False)
-        
+        # Get the API key for Gemini
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({"message": "Thiếu Gemini API key trong cấu hình"}), 500
+            
         # Get the report prompt from prompt.txt
         with open('backend/app/templates/report_prompt.txt', 'r', encoding='utf-8') as file:
             prompt_template = file.read()
@@ -620,12 +621,60 @@ def generate_feedback_report():
         # Replace placeholders in prompt template
         prompt = prompt_template.replace("{thời gian báo cáo: ví dụ \"tháng 4 năm 2025\", \"ngày 01/05/2025\", hoặc \"quý I năm 2025\"}", report_period)
         
-        # Call Gemini API to get improvement suggestions only
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            return jsonify({"message": "Thiếu Gemini API key trong cấu hình"}), 500
+        # Set a threshold for maximum number of feedbacks to send at once
+        MAX_FEEDBACK_BATCH = 50
         
-        gemini_response = call_gemini_api(prompt, formatted_data, api_key)
+        # If negative feedbacks exceed threshold, process in batches
+        gemini_response = ""
+        if len(negative_feedbacks_data) > MAX_FEEDBACK_BATCH:
+            logging.info(f"Processing {len(negative_feedbacks_data)} negative feedbacks in batches")
+            
+            # Calculate number of batches needed
+            num_batches = (len(negative_feedbacks_data) + MAX_FEEDBACK_BATCH - 1) // MAX_FEEDBACK_BATCH
+            summary_so_far = ""
+            
+            for batch_num in range(num_batches):
+                start_idx = batch_num * MAX_FEEDBACK_BATCH
+                end_idx = min((batch_num + 1) * MAX_FEEDBACK_BATCH, len(negative_feedbacks_data))
+                
+                current_batch = negative_feedbacks_data[start_idx:end_idx]
+                logging.info(f"Processing batch {batch_num + 1}/{num_batches} with {len(current_batch)} feedbacks")
+                
+                # Create a batch prompt
+                batch_prompt = (
+                    (f"Dưới đây là bản tóm tắt từ phần trước: \n\n{summary_so_far}\n\n" if summary_so_far else "") +
+                    f"Hãy tóm tắt và phân tích những phản hồi tiêu cực dưới đây từ sinh viên.\n" +
+                    f"Đây là batch {batch_num + 1}/{num_batches} của phản hồi tiêu cực.\n" +
+                    f"Xác định các vấn đề chính và tạo tóm tắt ngắn gọn về các điểm đáng chú ý."
+                )
+
+                
+                # Format data for the prompt
+                formatted_batch_data = json.dumps(current_batch, ensure_ascii=False)
+                
+                # Call Gemini API for this batch
+                batch_response = call_gemini_api(batch_prompt, formatted_batch_data, api_key)
+                
+                if not batch_response:
+                    return jsonify({"message": f"Không thể tạo tóm tắt cho batch {batch_num + 1}"}), 500
+                
+                # Update the summary so far
+                summary_so_far = batch_response
+                
+            # Use the final summary to generate the report
+            final_prompt = f"""
+            Dựa trên bản tóm tắt phản hồi tiêu cực dưới đây:
+            
+            {summary_so_far}
+            
+            Hãy đưa ra các đề xuất cải thiện như yêu cầu trong prompt ban đầu.
+            """
+            
+            gemini_response = call_gemini_api(final_prompt, "", api_key)
+        else:
+            # Process normally if feedbacks are under threshold
+            formatted_data = json.dumps(negative_feedbacks_data, ensure_ascii=False)
+            gemini_response = call_gemini_api(prompt, formatted_data, api_key)
         
         if not gemini_response:
             return jsonify({"message": "Không thể tạo đề xuất cải thiện từ Gemini API"}), 500
