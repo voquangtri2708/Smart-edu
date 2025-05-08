@@ -976,12 +976,16 @@ export default {
       
       // Replace Markdown headings with HTML headings
       let formattedContent = content
+        .replace(/^# (.*?)$/gm, '<h1>$1</h1>') // H1 headings
+        .replace(/^## (.*?)$/gm, '<h2>$1</h2>') // H2 headings
+        .replace(/^### (.*?)$/gm, '<h3>$1</h3>') // H3 headings
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
-        .replace(/\n\n/g, '<br><br>') // Line breaks
-        .replace(/\n/g, '<br>') // Line breaks
-        .replace(/---/g, '<hr>') // Horizontal rule
+        .replace(/\n\n/g, '<br><br>') // Double line breaks
+        .replace(/\n/g, '<br>') // Single line breaks
+        .replace(/━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━/g, '<hr class="divider">') // Horizontal rule dividers
+        .replace(/---/g, '<hr>') // Standard horizontal rules
         
-        // Replace emoji headers
+        // Replace emoji with styled versions
         .replace(/📅/g, '<span class="report-emoji">📅</span>')
         .replace(/📊/g, '<span class="report-emoji">📊</span>')
         .replace(/📝/g, '<span class="report-emoji">📝</span>')
@@ -1154,6 +1158,75 @@ th:not(.sortable) {
   
   .report-emoji {
     font-size: 14pt;
+  }
+}
+
+/* Additional styling for the report content */
+:deep(.report-content) {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  line-height: 1.6;
+}
+
+:deep(.report-content h1) {
+  font-size: 1.8rem;
+  color: #0d6efd;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+:deep(.report-content h2) {
+  font-size: 1.4rem;
+  color: #212529;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+
+:deep(.report-content h3) {
+  font-size: 1.2rem;
+  color: #495057;
+  margin-top: 1.2rem;
+  margin-bottom: 0.8rem;
+  font-weight: 500;
+}
+
+:deep(.report-content .divider) {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #0d6efd, transparent);
+  margin: 1.5rem 0;
+}
+
+:deep(.report-content strong) {
+  font-weight: 600;
+  color: #495057;
+}
+
+:deep(.report-emoji) {
+  font-size: 1.3rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Improve report printability */
+@media print {
+  :deep(.report-content) {
+    font-size: 11pt;
+  }
+  
+  :deep(.report-content h1) {
+    font-size: 16pt;
+  }
+  
+  :deep(.report-content h2) {
+    font-size: 14pt;
+  }
+  
+  :deep(.report-content h3) {
+    font-size: 12pt;
   }
 }
 </style>

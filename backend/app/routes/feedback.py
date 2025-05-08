@@ -587,22 +587,40 @@ def generate_feedback_report():
         except ValueError:
             return jsonify({"message": "Định dạng ngày không hợp lệ. Sử dụng YYYY-MM-DD"}), 400
         
-        # Fetch feedbacks for the specified date range
-        feedbacks = get_feedbacks_for_report(start_date, end_date)
+        # Fetch all feedbacks for the specified date range for statistics
+        all_feedbacks = get_feedbacks_for_report(start_date, end_date)
         
-        if not feedbacks:
+        if not all_feedbacks:
             return jsonify({"message": "Không có dữ liệu phản hồi trong khoảng thời gian đã chọn"}), 404
         
-        # Format data for the prompt
-        formatted_data = json.dumps(feedbacks, ensure_ascii=False)
+        # Calculate statistics
+        total_feedbacks = len(all_feedbacks)
+        positive_feedbacks = len([f for f in all_feedbacks if f['sentiment'] == 'POSITIVE'])
+        neutral_feedbacks = len([f for f in all_feedbacks if f['sentiment'] == 'NEUTRAL'])
+        negative_feedbacks = len([f for f in all_feedbacks if f['sentiment'] == 'NEGATIVE'])
+        
+        positive_percent = round((positive_feedbacks / total_feedbacks * 100), 1) if total_feedbacks > 0 else 0
+        neutral_percent = round((neutral_feedbacks / total_feedbacks * 100), 1) if total_feedbacks > 0 else 0
+        negative_percent = round((negative_feedbacks / total_feedbacks * 100), 1) if total_feedbacks > 0 else 0
+        
+        # Filter only negative feedbacks for Gemini analysis
+        negative_feedbacks_data = [f for f in all_feedbacks if f['sentiment'] == 'NEGATIVE'
+        ]
+        
+        if not negative_feedbacks_data:
+            return jsonify({"message": "Không có phản hồi tiêu cực trong khoảng thời gian đã chọn"}), 404
+        
+        # Format data for the prompt - only send negative feedbacks to Gemini
+        formatted_data = json.dumps(negative_feedbacks_data, ensure_ascii=False)
         
         # Get the report prompt from prompt.txt
         with open('backend/app/templates/report_prompt.txt', 'r', encoding='utf-8') as file:
             prompt_template = file.read()
         
+        # Replace placeholders in prompt template
         prompt = prompt_template.replace("{thời gian báo cáo: ví dụ \"tháng 4 năm 2025\", \"ngày 01/05/2025\", hoặc \"quý I năm 2025\"}", report_period)
         
-        # Call Gemini API
+        # Call Gemini API to get improvement suggestions only
         api_key = os.environ.get('GEMINI_API_KEY')
         if not api_key:
             return jsonify({"message": "Thiếu Gemini API key trong cấu hình"}), 500
@@ -610,17 +628,77 @@ def generate_feedback_report():
         gemini_response = call_gemini_api(prompt, formatted_data, api_key)
         
         if not gemini_response:
-            return jsonify({"message": "Không thể tạo báo cáo từ Gemini API"}), 500
+            return jsonify({"message": "Không thể tạo đề xuất cải thiện từ Gemini API"}), 500
+        
+        # Generate the complete report with statistics and AI suggestions
+        complete_report = generate_complete_report(
+            report_period,
+            total_feedbacks,
+            positive_feedbacks,
+            positive_percent,
+            neutral_feedbacks,
+            neutral_percent,
+            negative_feedbacks,
+            negative_percent,
+            gemini_response
+        )
         
         return jsonify({
-            "report": gemini_response,
+            "report": complete_report,
+            "suggestions": gemini_response,
             "period": report_period,
-            "feedback_count": len(feedbacks)
+            "feedback_count": total_feedbacks,
+            "statistics": {
+                "total": total_feedbacks,
+                "positive": positive_feedbacks,
+                "neutral": neutral_feedbacks,
+                "negative": negative_feedbacks,
+                "positive_percent": positive_percent,
+                "neutral_percent": neutral_percent,
+                "negative_percent": negative_percent
+            }
         })
     
     except Exception as e:
         logging.error(f"Error generating feedback report: {str(e)}")
         return jsonify({"message": f"Lỗi tạo báo cáo: {str(e)}"}), 500
+
+def generate_complete_report(
+    report_period, 
+    total_feedbacks, 
+    positive_feedbacks, 
+    positive_percent, 
+    neutral_feedbacks, 
+    neutral_percent, 
+    negative_feedbacks, 
+    negative_percent, 
+    suggestions
+):
+    """Tạo báo cáo hoàn chỉnh từ thống kê và đề xuất cải thiện"""
+    
+    report = f"""
+# BÁO CÁO PHẢN HỒI SINH VIÊN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📅 THÔNG TIN TỔNG QUAN
+**Khoảng thời gian**: {report_period}
+**Ngày tạo báo cáo**: {datetime.now().strftime('%d/%m/%Y')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📊 PHÂN TÍCH PHẢN HỒI
+### Tổng quan
+• **Tổng số phản hồi**: {total_feedbacks}
+
+### Phân loại theo cảm xúc
+• **Tích cực**: {positive_feedbacks} phản hồi ({positive_percent}%)
+• **Trung lập**: {neutral_feedbacks} phản hồi ({neutral_percent}%)
+• **Tiêu cực**: {negative_feedbacks} phản hồi ({negative_percent}%)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 💡 ĐỀ XUẤT CẢI THIỆN
+{suggestions}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**Lưu ý**: Báo cáo này được tạo tự động dựa trên phản hồi của sinh viên và phân tích bằng AI.
+"""
+    
+    return report
 
 def get_feedbacks_for_report(start_date, end_date):
     """Lấy danh sách đánh giá trong khoảng thời gian"""
