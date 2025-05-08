@@ -14,6 +14,7 @@ from app.models.classroom import Classroom
 from app.models.building import Building
 from app.models.campus import Campus
 from app.models.teacher import Teacher
+from app.models.schedule import Schedule
 import json
 import requests
 import os
@@ -522,10 +523,6 @@ def get_classrooms_for_feedback(student_id, class_id):
         evaluated_classroom_ids = [c.classroom_id for c in evaluated_classrooms]
         logging.info(f"Evaluated classroom IDs: {evaluated_classroom_ids}")
         
-        # Lấy các phòng học từ lịch học của lớp này thay vì tất cả phòng học
-        from app.models.schedule import Schedule
-        from app.models.classroom import Classroom
-        
         # Lấy các phòng học duy nhất từ lịch học của lớp
         classroom_ids_query = db.session.query(Schedule.classroom_id).filter(
             Schedule.class_id == class_id
@@ -543,11 +540,24 @@ def get_classrooms_for_feedback(student_id, class_id):
         
         for classroom in classrooms:
             if classroom.id not in evaluated_classroom_ids:
+                building_name = None
+                campus_name = None
+                if classroom.building_id:
+                    building = Building.query.get(classroom.building_id)
+                    if building:
+                        building_name = building.name
+                        # Lấy thông tin về cơ sở
+                        if building.campus_id:
+                            campus = Campus.query.get(building.campus_id)
+                            if campus:
+                                campus_name = campus.name
                 available_classrooms.append({
                     "id": classroom.id,
                     "room_number": classroom.room_number,
                     "capacity": classroom.capacity,
-                    "building_id": classroom.building_id
+                    "building_id": classroom.building_id,
+                    "building_name": building_name,
+                    "campus_name": campus_name
                 })
         
         logging.info(f"Available classrooms count: {len(available_classrooms)}")
