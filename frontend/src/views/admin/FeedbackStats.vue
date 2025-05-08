@@ -934,7 +934,7 @@ export default {
       
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.post('http://localhost:5000/api/feedbacks/generate-report', {
+        const response = await api.post('/feedbacks/generate-report', {
           start_date: reportDates.value.startDate,
           end_date: reportDates.value.endDate
         }, {
