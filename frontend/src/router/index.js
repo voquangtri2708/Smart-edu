@@ -1,11 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/LoginView.vue';
 import HomePageView from '@/views/HomePageView.vue';
-import StudentFeedback from '@/views/StudentFeedback.vue';
+import StudentFeedback from '@/views/student/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
+import AdminFeedbackStats from '@/views/admin/FeedbackStats.vue';
 import SubjectManagement from '../views/admin/SubjectManagement.vue';
 import CampusManagement from '@/views/admin/CampusManagement.vue';
 import ScheduleManagement from '@/views/admin/ScheduleManagement.vue';
+import StudentScheduleView from '@/views/student/StudentScheduleView.vue';
+import TeacherScheduleView from '@/views/teacher/TeacherScheduleView.vue';
+import QuestionBankManagement from '@/views/admin/QuestionBankManagement.vue';
+import TeacherQuestionBankManagement from '@/views/teacher/QuestionBankManagement.vue';
+import TeacherExamManagement from '@/views/teacher/ExamManagement.vue';
+import ExamQuestionManager from '@/views/teacher/ExamQuestionManager.vue';
+import StudentExamView from '@/views/student/StudentExamView.vue';
+import StudentExamTakeView from '@/views/student/StudentExamTakeView.vue';
+import StudentExamResultView from '@/views/student/StudentExamResultView.vue';
+import TeacherExamGradingView from '@/views/teacher/TeacherExamGradingView.vue';
+import TeacherGradeEntry from '@/views/teacher/TeacherGradeEntry.vue';
+import TeacherAttendanceView from '@/views/teacher/TeacherAttendanceView.vue';
+import StudentAttendanceView from '@/views/student/StudentAttendanceView.vue';
 
 // New import for ClassroomManagement
 import ClassroomManagement from '@/views/admin/ClassroomManagement.vue';
@@ -22,11 +36,164 @@ const AdminClassTeachersManagement = () => import('@/views/admin/ClassTeachersMa
 const StudentProfile = () => import('@/views/profile/StudentProfile.vue');
 const TeacherProfile = () => import('@/views/profile/TeacherProfile.vue');
 
+// New import for GradeTypeManagement
+import GradeTypeManagement from '@/views/admin/GradeTypeManagement.vue';
+
+// New import for StudentGradesView
+import StudentGradesView from '@/views/student/StudentGradesView.vue';
+
 const routes = [
   { path: "/", component: HomePageView },
   { path: "/login", component: Login },
   { path: "/student-feedbacks", component: StudentFeedback },
   { path: "/feedbacks", component: AdminFeedbackManagement },
+  
+  // Temporary route to fix the subjects link
+  {
+    path: "/subjects",
+    name: "subjects-redirect",
+    redirect: to => {
+      const userRole = localStorage.getItem('user_role');
+      if (userRole === 'admin') return '/admin/subjects';
+      if (userRole === 'student') return '/student/schedule';
+      if (userRole === 'teacher') return '/teacher/schedule';
+      return '/';
+    }
+  },
+  
+  // Student routes
+  {
+    path: "/student/schedule",
+    name: "student-schedule",
+    component: StudentScheduleView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/attendance",
+    name: "student-attendance",
+    component: StudentAttendanceView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/exams",
+    name: "student-exam-schedule",
+    component: StudentExamView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/exams/:id/take",
+    name: "student-exam-take",
+    component: StudentExamTakeView,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/exams/:id/result",
+    name: "student-exam-result",
+    component: StudentExamResultView,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  {
+    path: "/student/grades",
+    name: "student-grades",
+    component: StudentGradesView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "student" 
+    }
+  },
+  
+  // Teacher routes
+  {
+    path: "/teacher/schedule",
+    name: "teacher-schedule",
+    component: TeacherScheduleView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/attendance",
+    name: "teacher-attendance",
+    component: TeacherAttendanceView,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/questions",
+    name: "teacher-question-bank",
+    component: TeacherQuestionBankManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/exams",
+    name: "teacher-exams",
+    component: TeacherExamManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/exams/:examId/questions",
+    name: "exam-questions",
+    component: ExamQuestionManager,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/exams/:examId/grading",
+    name: "exam-grading",
+    component: TeacherExamGradingView,
+    props: true,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/exams/grading",
+    name: "exams-grading-list",
+    component: () => import('@/views/teacher/TeacherExamsGradingList.vue'),
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
+  {
+    path: "/teacher/grade-entry",
+    name: "teacher-grade-entry",
+    component: TeacherGradeEntry,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "teacher" 
+    }
+  },
   
   // Admin routes
   { 
@@ -58,6 +225,15 @@ const routes = [
     }
   },
   {
+    path: "/admin/questions",
+    name: "admin-question-bank",
+    component: QuestionBankManagement,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
+  },
+  {
     path: '/admin/class-students/:id',
     name: 'admin-class-students-management',
     component: AdminClassStudentsManagement,
@@ -73,6 +249,15 @@ const routes = [
     path: '/admin/feedbacks',
     name: 'admin-feedback-management',
     component: AdminFeedbackManagement
+  },
+  {
+    path: '/admin/stats/feedback',
+    name: 'admin-feedback-stats',
+    component: AdminFeedbackStats,
+    meta: { 
+      requiresAuth: true, 
+      requiredRole: "admin" 
+    }
   },
   {
     path: '/admin/campuses',
@@ -136,6 +321,34 @@ const routes = [
       if (userRole === 'student') return '/profile/student';
       if (userRole === 'teacher') return '/profile/teacher';
       return '/';
+    }
+  },
+  // Question Bank redirect based on role
+  {
+    path: "/questions",
+    redirect: to => {
+      const userRole = localStorage.getItem('user_role');
+      if (userRole === 'admin') return '/admin/questions';
+      if (userRole === 'teacher') return '/teacher/questions';
+      return '/';
+    }
+  },
+  // Exam redirect based on role
+  {
+    path: "/exams",
+    redirect: to => {
+      const userRole = localStorage.getItem('user_role');
+      if (userRole === 'teacher') return '/teacher/exams';
+      return '/';
+    }
+  },
+  {
+    path: '/admin/grade-types',
+    name: 'admin-grade-types',
+    component: GradeTypeManagement,
+    meta: {
+      requiresAuth: true,
+      requiredRole: 'admin'
     }
   },
 ];

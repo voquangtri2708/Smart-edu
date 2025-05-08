@@ -37,7 +37,7 @@ CREATE TABLE subject
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
     code VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     credit INT NOT NULL,
     description TEXT
 );
@@ -93,7 +93,7 @@ CREATE TABLE class
 CREATE TABLE building
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     campus_id INT,
     CONSTRAINT fk_building_campus FOREIGN KEY (campus_id) REFERENCES campus (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -102,7 +102,7 @@ CREATE TABLE building
 CREATE TABLE classroom
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    room_number VARCHAR(50) UNIQUE NOT NULL,
+    room_number VARCHAR(50) NOT NULL,
     capacity INT NOT NULL,
     facilities TEXT,
     building_id INT,
@@ -205,25 +205,44 @@ CREATE TABLE exam
     duration_minutes INT NOT NULL,
     class_id INT NOT NULL,
     grade_type_id INT NOT NULL,
+    exam_start_time TIME NOT NULL,
+    exam_end_time TIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_exam_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_exam_grade_type FOREIGN KEY (grade_type_id) REFERENCES grade_type (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 17. Bảng Exam Question (Đề thi)
+CREATE TABLE question
+(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    question_text TEXT NOT NULL,
+    question_type ENUM('MULTIPLE_CHOICE', 'TRUE_FALSE', 'ESSAY', 'SHORT_ANSWER') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE answer
+(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    question_id INT NOT NULL,
+    answer_text TEXT,
+    is_correct BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_answer_question FOREIGN KEY (question_id) REFERENCES question (id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE exam_question
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
     exam_id INT NOT NULL,
-    question_text TEXT NOT NULL,
-    answer_options TEXT,
-    correct_answer TEXT,
-    points FLOAT NOT NULL,
-    question_type ENUM('MULTIPLE_CHOICE', 'TRUE_FALSE', 'ESSAY', 'SHORT_ANSWER') NOT NULL,
+    question_id INT NOT NULL,
+    points double NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_exam_question_exam FOREIGN KEY (exam_id) REFERENCES exam (id) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT fk_exam_question_exam FOREIGN KEY (exam_id) REFERENCES exam (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_exam_question_question FOREIGN KEY (question_id) REFERENCES question (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Thêm gender vào bảng student và teacher
@@ -264,3 +283,36 @@ CREATE TABLE attendance (
     CONSTRAINT fk_attendance_schedule FOREIGN KEY (schedule_id) REFERENCES schedule(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_attendance_teacher FOREIGN KEY (recorded_by) REFERENCES teacher(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+
+ALTER TABLE building
+ADD UNIQUE (name, campus_id);
+
+ALTER TABLE classroom 
+ADD UNIQUE (room_number, building_id);
+
+
+ALTER TABLE class
+ADD COLUMN is_del BOOLEAN DEFAULT FALSE NOT NULL AFTER end_date;
+
+CREATE TABLE student_exam_answer (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id CHAR(11) NOT NULL,
+    exam_id INT NOT NULL,
+    question_id INT NOT NULL,
+    answer_text TEXT, -- Có thể là lựa chọn hoặc nội dung tự luận
+    is_correct BOOLEAN, -- Dùng cho câu hỏi auto chấm (MCQ, TRUE_FALSE)
+    score DOUBLE, -- Điểm chấm tay (hoặc auto nếu có)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_sea_student FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_sea_exam FOREIGN KEY (exam_id) REFERENCES exam(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_sea_question FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    
+    UNIQUE (student_id, exam_id, question_id) -- Mỗi học sinh chỉ trả lời 1 lần cho 1 câu hỏi trong 1 bài thi
+);
+
+
+ALTER TABLE attendance
+ADD COLUMN ip_public VARCHAR(45) DEFAULT NULL;

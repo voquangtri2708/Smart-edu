@@ -3,17 +3,12 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Quản Lý Lịch Học</h4>
-        <button @click="showAddForm = true" class="btn btn-primary">
+        <button @click="showAddScheduleForm" class="btn btn-primary">
           <i class="bi bi-plus-circle me-1"></i>Thêm Lịch Học Mới
         </button>
       </div>
       
-      <div class="card-body">
-        <!-- Hiển thị thông báo -->
-        <div v-if="message" :class="'alert alert-' + messageType" role="alert">
-          {{ message }}
-        </div>
-        
+      <div class="card-body">        
         <!-- Search and filter -->
         <div class="row mb-3">
           <div class="col-md-4">
@@ -35,18 +30,14 @@
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label">Ngày học</label>
+            <label class="form-label">Ngày</label>
             <div class="d-flex">
-              <select v-model="filters.day_of_week" class="form-select flex-grow-1">
-                <option value="">Tất cả các ngày</option>
-                <option value="MON">Thứ 2</option>
-                <option value="TUE">Thứ 3</option>
-                <option value="WED">Thứ 4</option>
-                <option value="THU">Thứ 5</option>
-                <option value="FRI">Thứ 6</option>
-                <option value="SAT">Thứ 7</option>
-                <option value="SUN">Chủ nhật</option>
-              </select>
+              <VueFlatpickr
+                v-model="filters.specific_date"
+                class="form-control flex-grow-1"
+                placeholder="Chọn ngày cụ thể"
+                :config="flatpickrConfig"
+              />
               <button @click="fetchSchedules" class="btn btn-primary ms-2 flex-shrink-0">
                 <i class="bi bi-search me-1"></i>Lọc
               </button>
@@ -161,7 +152,7 @@
     </div>
     
     <!-- Modal thêm/sửa lịch học -->
-    <div class="modal fade" id="scheduleModal" tabindex="-1" ref="scheduleModal" :class="{ 'show d-block': showAddForm || editing }" style="z-index: 1060;">
+    <div class="modal fade" id="scheduleModal" tabindex="-1" data-bs-backdrop="static" ref="scheduleModal" :class="{ 'show': showAddForm || editing }" style="z-index: 1050;">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -197,31 +188,19 @@
               </div>
               
               <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <div class="mb-3">
-                    <label class="form-label">Ngày trong tuần <span class="text-danger">*</span></label>
-                    <select v-model="form.day_of_week" class="form-select" required>
-                      <option value="">Chọn ngày</option>
-                      <option value="MON">Thứ 2</option>
-                      <option value="TUE">Thứ 3</option>
-                      <option value="WED">Thứ 4</option>
-                      <option value="THU">Thứ 5</option>
-                      <option value="FRI">Thứ 6</option>
-                      <option value="SAT">Thứ 7</option>
-                      <option value="SUN">Chủ nhật</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label class="form-label">Ngày cụ thể (tùy chọn)</label>
+                    <label class="form-label">Ngày cụ thể <span class="text-danger">*</span></label>
                     <VueFlatpickr
                       v-model="form.specific_date"
                       class="form-control"
                       placeholder="DD/MM/YYYY"
                       :config="flatpickrConfig"
+                      required
                     />
+                    <div class="form-text text-muted">
+                      Ngày trong tuần sẽ được tự động tính từ ngày cụ thể
+                    </div>
                   </div>
                 </div>
               </div>
@@ -265,8 +244,49 @@
       </div>
     </div>
     
-    <!-- Modal backdrop -->
-    <div class="modal-backdrop fade show" v-if="showAddForm || editing" @click="cancelEdit" style="z-index: 1050;"></div>
+    <!-- Delete Confirmation Modal - Đã tăng z-index lên cao hơn -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static" ref="deleteModal" style="z-index: 1070;">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Xác nhận xóa</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Bạn có chắc chắn muốn xóa lịch học này không?</p>
+            <p class="text-danger"><small>Hành động này không thể hoàn tác.</small></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="button" class="btn btn-danger" @click="confirmDeleteSchedule" :disabled="processing">
+              <span v-if="processing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" ref="toastNotification">
+        <div class="toast-header" :class="{'bg-success text-white': toastType === 'success', 'bg-danger text-white': toastType === 'error', 'bg-warning text-white': toastType === 'warning'}">
+          <strong class="me-auto">{{ toastTitle }}</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <div v-if="!hasDetails">{{ toastMessage }}</div>
+          <div v-else>
+            <strong>{{ toastMessage }}</strong>
+            <ul class="mb-0 mt-1">
+              <li v-for="(detail, index) in messageDetails" :key="index">
+                {{ detail }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -275,6 +295,8 @@ import { scheduleAPI } from "@/utils/api";
 import VueFlatpickr from "vue-flatpickr-component";
 import "flatpickr/dist/flatpickr.css";
 import Vietnamese from 'flatpickr/dist/l10n/vn.js';
+import { Modal, Toast } from 'bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default {
   components: {
@@ -292,7 +314,6 @@ export default {
         id: null,
         class_id: "",
         classroom_id: "",
-        day_of_week: "",
         start_time: "",
         end_time: "",
         specific_date: null
@@ -306,30 +327,48 @@ export default {
       filters: {
         class_id: "",
         classroom_id: "",
-        day_of_week: ""
+        specific_date: null
       },
       loading: false,
       processing: false,
       message: "",
       messageType: "success",
+      messageTitle: "",
+      messageDetails: [],
+      // Toast notification
+      toastTitle: "Thông báo",
+      toastMessage: "",
+      toastType: "success",
       flatpickrConfig: {
         dateFormat: "Y-m-d",
         locale: Vietnamese.vn,
         allowInput: true,
         altInput: true,
         altFormat: "d/m/Y",
+        enableTime: false,
+        time_24hr: true,
+        disableMobile: true,
         parseDate: (datestr, format) => {
-          // Xử lý khi người dùng nhập 8 số liên tiếp
-          if (/^\d{8}$/.test(datestr)) {
-            return new Date(
-              datestr.substr(4, 4) + '-' + 
-              datestr.substr(2, 2) + '-' + 
-              datestr.substr(0, 2)
-            );
+          // Xử lý khi chuỗi là một ngày ISO
+          if (datestr && datestr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = datestr.split('-').map(Number);
+            return new Date(year, month - 1, day);
           }
-          return null; // Let flatpickr handle other formats
+          
+          // Xử lý khi người dùng nhập 8 số liên tiếp (ddMMyyyy)
+          if (/^\d{8}$/.test(datestr)) {
+            const day = parseInt(datestr.substr(0, 2), 10);
+            const month = parseInt(datestr.substr(2, 2), 10) - 1;  
+            const year = parseInt(datestr.substr(4, 4), 10);
+            return new Date(year, month, day);
+          }
+          
+          // Để flatpickr xử lý các định dạng khác
+          return null;
         }
-      }
+      },
+      scheduleToDeleteId: null,
+      confirmingDelete: false
     };
   },
   computed: {
@@ -350,6 +389,18 @@ export default {
       }
       
       return pages;
+    },
+    hasDetails() {
+      return Array.isArray(this.messageDetails) && this.messageDetails.length > 0;
+    },
+    getAlertIcon() {
+      const iconMap = {
+        success: "bi bi-check-circle-fill text-success",
+        danger: "bi bi-exclamation-triangle-fill text-danger",
+        warning: "bi bi-exclamation-circle-fill text-warning",
+        info: "bi bi-info-circle-fill text-info"
+      };
+      return iconMap[this.messageType] || "bi bi-info-circle-fill text-info";
     }
   },
   methods: {
@@ -410,8 +461,11 @@ export default {
         this.processing = true;
         const scheduleData = { ...this.form };
         
+        // Đảm bảo luôn có specific_date
         if (!scheduleData.specific_date) {
-          scheduleData.specific_date = null;
+          this.showMessage("Ngày cụ thể là bắt buộc", "danger");
+          this.processing = false;
+          return;
         }
         
         if (this.editing) {
@@ -426,39 +480,110 @@ export default {
         this.cancelEdit();
       } catch (error) {
         console.error("Lỗi khi lưu lịch học:", error);
-        this.showMessage(error.response?.data?.error || "Lỗi khi lưu lịch học", "danger");
+        
+        // Xử lý chi tiết các loại lỗi xung đột lịch học
+        if (error.response?.data) {
+          const errorData = error.response.data;
+          let errorMessage = errorData.error || "Lỗi khi lưu lịch học";
+          
+          // Hiển thị thông tin chi tiết nếu có
+          if (errorData.detail) {
+            errorMessage += ": " + errorData.detail;
+          }
+          
+          this.showMessage(errorMessage, "danger");
+        } else {
+          this.showMessage("Lỗi khi lưu lịch học", "danger");
+        }
       } finally {
         this.processing = false;
       }
     },
     
     editSchedule(schedule) {
+      // Tạo bản sao thông tin schedule
       this.form = { 
         id: schedule.id,
         class_id: schedule.class_id,
         classroom_id: schedule.classroom_id,
-        day_of_week: schedule.day_of_week,
         start_time: schedule.start_time,
-        end_time: schedule.end_time,
-        specific_date: schedule.specific_date
+        end_time: schedule.end_time
       };
+      
+      // Xử lý ngày cụ thể - cách mới
+      if (schedule.specific_date) {
+        try {
+          // Lấy ngày, tháng, năm từ chuỗi YYYY-MM-DD
+          const [year, month, day] = schedule.specific_date.split('-').map(Number);
+          
+          // Sử dụng setTimeout để tránh conflict giữa việc gán giá trị và khởi tạo datepicker
+          setTimeout(() => {
+            // Tạo đối tượng Date mới
+            this.form.specific_date = schedule.specific_date;
+            
+            console.log("Đã gán ngày:", this.form.specific_date);
+          }, 0);
+        } catch (e) {
+          console.error("Lỗi khi xử lý ngày:", e);
+          this.form.specific_date = null;
+        }
+      } else {
+        this.form.specific_date = null;
+      }
+      
       this.editing = true;
       this.showAddForm = false;
+      
+      // Hiển thị modal bằng Bootstrap với timeout
+      setTimeout(() => {
+        const modalElement = this.$refs.scheduleModal;
+        if (modalElement) {
+          const scheduleModalInstance = new Modal(modalElement);
+          scheduleModalInstance.show();
+        }
+      }, 50); // Đợi 50ms để flatpickr khởi tạo hoàn tất
     },
     
     async deleteSchedule(id) {
-      if (confirm("Bạn có chắc muốn xóa lịch học này?")) {
-        try {
-          this.processing = true;
-          await scheduleAPI.deleteSchedule(id);
-          this.showMessage("Xóa lịch học thành công", "success");
-          this.fetchSchedules();
-        } catch (error) {
-          console.error("Lỗi khi xóa lịch học:", error);
-          this.showMessage("Không thể xóa lịch học", "danger");
-        } finally {
-          this.processing = false;
+      // Lưu ID lịch học cần xóa vào state
+      this.scheduleToDeleteId = id;
+      this.confirmingDelete = true;
+      
+      // Hiển thị modal xác nhận xóa
+      const modalElement = this.$refs.deleteModal;
+      if (modalElement) {
+        const deleteModalInstance = new Modal(modalElement);
+        deleteModalInstance.show();
+      } else {
+        // Fallback nếu không tìm thấy modal element
+        if (confirm("Bạn có chắc chắn muốn xóa lịch học này không?")) {
+          this.confirmDeleteSchedule();
         }
+      }
+    },
+    
+    async confirmDeleteSchedule() {
+      try {
+        this.processing = true;
+        await scheduleAPI.deleteSchedule(this.scheduleToDeleteId);
+        
+        // Đóng modal xác nhận
+        const modalElement = this.$refs.deleteModal;
+        if (modalElement) {
+          const modalInstances = Modal.getInstance(modalElement);
+          if (modalInstances) {
+            modalInstances.hide();
+          }
+        }
+        
+        this.showMessage("Xóa lịch học thành công", "success");
+        this.fetchSchedules();
+      } catch (error) {
+        console.error("Lỗi khi xóa lịch học:", error);
+        this.showMessage("Không thể xóa lịch học", "danger");
+      } finally {
+        this.processing = false;
+        this.confirmingDelete = false;
       }
     },
     
@@ -466,6 +591,15 @@ export default {
       this.resetForm();
       this.editing = false;
       this.showAddForm = false;
+      
+      // Đóng modal bằng Bootstrap
+      const modalElement = this.$refs.scheduleModal;
+      if (modalElement) {
+        const modalInstance = Modal.getInstance(modalElement);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      }
     },
     
     resetForm() {
@@ -473,7 +607,6 @@ export default {
         id: null,
         class_id: "",
         classroom_id: "",
-        day_of_week: "",
         start_time: "",
         end_time: "",
         specific_date: null
@@ -530,18 +663,84 @@ export default {
       return dayMap[day] || day;
     },
     
-    showMessage(text, type = 'success') {
-      this.message = text;
-      this.messageType = type;
+    showMessage(text, type = 'success', details = null) {
+      // Cập nhật thông tin cho toast notification
+      this.toastTitle = type === "danger" ? "Lỗi" : "Thông báo";
+      this.toastMessage = text;
+      this.toastType = type === "danger" ? "error" : type;
+      this.messageDetails = [];
       
-      setTimeout(() => {
-        this.message = '';
-      }, 3000);
+      // Xử lý khi message có dạng "Tiêu đề: Chi tiết"
+      if (text && text.includes(":")) {
+        const parts = text.split(":");
+        this.messageTitle = parts[0].trim();
+        
+        if (parts.length > 1) {
+          // Kiểm tra nếu chi tiết chứa từ khóa về các loại xung đột
+          const detailText = parts.slice(1).join(":").trim();
+          
+          if (detailText.includes("sinh viên") || detailText.includes("giáo viên") || 
+              detailText.includes("lớp học") || detailText.includes("phòng học")) {
+            
+            // Parse các thông tin xung đột
+            this.parseConflictDetails(detailText);
+          } else {
+            // Nếu không phải dạng xung đột đặc biệt, hiển thị nguyên text
+            this.messageDetails = [detailText];
+          }
+        }
+      }
+      
+      // Nếu có thông tin chi tiết bổ sung được cung cấp
+      if (details) {
+        if (Array.isArray(details)) {
+          this.messageDetails = [...this.messageDetails, ...details];
+        } else {
+          this.messageDetails.push(details);
+        }
+      }
+      
+      // Hiển thị Toast notification
+      const toastEl = this.$refs.toastNotification;
+      if (toastEl) {
+        const toast = new Toast(toastEl);
+        toast.show();
+        
+        // Đặt timeout để reset thông báo
+        setTimeout(() => {
+          this.messageDetails = [];
+        }, 5000);
+      }
+    },
+    
+    parseConflictDetails(detailText) {
+      if (detailText.includes("sinh viên có lịch trùng")) {
+        this.messageDetails = ["Sinh viên đã có lịch học vào thời điểm này"];
+      }
+      else if (detailText.includes("giáo viên có lịch trùng")) {
+        this.messageDetails = ["Giáo viên đã có lịch dạy vào thời điểm này"];
+      }
+      else {
+        this.messageDetails = ["Có lỗi xảy ra! Vui lòng kiểm tra lại thông tin"];
+      }
     },
     
     changePerPage() {
       this.currentPage = 1;
       this.fetchSchedules();
+    },
+    
+    showAddScheduleForm() {
+      this.resetForm();
+      this.editing = false;
+      this.showAddForm = true;
+
+      // Hiển thị modal bằng Bootstrap
+      const modalElement = this.$refs.scheduleModal;
+      if (modalElement) {
+        const scheduleModalInstance = new Modal(modalElement);
+        scheduleModalInstance.show();
+      }
     }
   },
   mounted() {
@@ -555,11 +754,26 @@ export default {
 /* Add modal styles for when Bootstrap JS is not available */
 .modal {
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1050;
+  z-index: 1060 !important;
 }
 
 /* Hide scrollbar on body when modal is shown */
 :global(body.modal-open) {
   overflow: hidden;
+}
+
+/* Ensure modal is always on top of backdrop */
+.modal-content {
+  z-index: 1061 !important;
+  position: relative;
+}
+
+/* Fix for multiple backdrops */
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.modal-backdrop + .modal-backdrop {
+  z-index: 1049 !important;
 }
 </style>

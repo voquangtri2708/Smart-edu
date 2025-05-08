@@ -3,6 +3,7 @@ from app import db
 from app.models.student import Student
 from app.models.teacher import Teacher
 from app.ml.faces import encode_face, check_face, encode_face_from_base64
+import logging
 
 face_recognition_bp = Blueprint('face_recognition', __name__)
 
@@ -11,14 +12,16 @@ def recognize_face():
     """
     API nhận diện khuôn mặt từ ảnh đầu vào
     Input: {
-        "image": "base64_encoded_string",  # Hình ảnh dưới dạng base64
-        "role": "student" hoặc "teacher"   # Vai trò để tìm kiếm (không bắt buộc)
+        "image": "base64_encoded_string",      # Hình ảnh dưới dạng base64
+        "role": "student" hoặc "teacher"       # Vai trò để tìm kiếm (không bắt buộc)
+        "expected_id": "id của người dùng"     # ID mong đợi của người dùng (không bắt buộc)
     }
     Output:
     - Nếu nhận diện thành công: 
         {
             "recognized": true,
-            "user": {thông tin người dùng}
+            "user": {thông tin người dùng},
+            "matched_expected": true/false     # Có khớp với ID mong đợi không
         }
     - Nếu không nhận diện được: 
         {
@@ -32,6 +35,10 @@ def recognize_face():
     # Lấy dữ liệu ảnh (base64 encoded)
     image_data = request.json.get('image')
     role = request.json.get('role')  # Nếu có
+    expected_id = request.json.get('expected_id')  # ID mong đợi nếu có
+    
+    # Log để debug
+    logging.info(f"Face Recognition request: role={role}, expected_id={expected_id}")
     
     # Tạo face encoding trực tiếp từ ảnh base64
     face_embedding = encode_face_from_base64(image_data)
@@ -45,6 +52,11 @@ def recognize_face():
     # Tìm kiếm đối tượng phù hợp trong database
     match_found = False
     matched_user = None
+    matched_expected = False
+    
+    # Chuyển expected_id thành string để so sánh chính xác, loại bỏ khoảng trắng
+    if expected_id is not None:
+        expected_id = str(expected_id).strip()
     
     # Tìm kiếm trong student nếu không chỉ định role hoặc role là student
     if not role or role == 'student':
@@ -52,6 +64,10 @@ def recognize_face():
         for student in students:
             if check_face(face_embedding, student.face_encoding):
                 match_found = True
+                
+                # Chuyển ID của student thành string để so sánh
+                student_id_str = str(student.id).strip()
+                
                 matched_user = {
                     "id": student.id,
                     "role": "student",
@@ -60,6 +76,17 @@ def recognize_face():
                     "email": student.email,
                     "avatar_url": student.avatar_url
                 }
+                
+                # Log để debug
+                logging.info(f"Found matching student: id={student_id_str}, expected_id={expected_id}")
+                
+                # Kiểm tra nếu ID được nhận diện khớp với ID mong đợi
+                if expected_id and student_id_str == expected_id:
+                    matched_expected = True
+                    logging.info("IDs match!")
+                else:
+                    logging.info(f"IDs don't match. Student ID={student_id_str}, Expected ID={expected_id}")
+                
                 break
     
     # Tìm kiếm trong teacher nếu không tìm thấy trong student hoặc role là teacher
@@ -68,6 +95,10 @@ def recognize_face():
         for teacher in teachers:
             if check_face(face_embedding, teacher.face_encoding):
                 match_found = True
+                
+                # Chuyển ID của teacher thành string để so sánh
+                teacher_id_str = str(teacher.id).strip()
+                
                 matched_user = {
                     "id": teacher.id,
                     "role": "teacher",
@@ -76,12 +107,27 @@ def recognize_face():
                     "email": teacher.email,
                     "avatar_url": teacher.avatar_url
                 }
+                
+                # Log để debug
+                logging.info(f"Found matching teacher: id={teacher_id_str}, expected_id={expected_id}")
+                
+                # Kiểm tra nếu ID được nhận diện khớp với ID mong đợi
+                if expected_id and teacher_id_str == expected_id:
+                    matched_expected = True
+                    logging.info("IDs match!")
+                else:
+                    logging.info(f"IDs don't match. Teacher ID={teacher_id_str}, Expected ID={expected_id}")
+                
                 break
+    
+    # Log kết quả cuối cùng
+    logging.info(f"Final result: recognized={match_found}, matched_expected={matched_expected}")
     
     if match_found:
         return jsonify({
             "recognized": True,
-            "user": matched_user
+            "user": matched_user,
+            "matched_expected": matched_expected
         })
     else:
         return jsonify({

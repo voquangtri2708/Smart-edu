@@ -20,6 +20,28 @@ def format_time(t):
 def format_date(d):
     return d.strftime('%Y-%m-%d') if d else None
 
+# Function to check time overlap between two schedules
+def is_time_overlapping(start1, end1, start2, end2):
+    """Check if two time periods overlap
+    
+    Args:
+        start1, end1: Start and end time of first schedule
+        start2, end2: Start and end time of second schedule
+        
+    Returns:
+        bool: True if schedules overlap, False otherwise
+    """
+    # Case 1: start1 is during schedule 2
+    if start1 >= start2 and start1 < end2:
+        return True
+    # Case 2: end1 is during schedule 2
+    if end1 > start2 and end1 <= end2:
+        return True
+    # Case 3: schedule 1 completely overlaps schedule 2
+    if start1 <= start2 and end1 >= end2:
+        return True
+    return False
+
 # Map số ngày trong tuần sang ENUM
 DAY_MAP = {
     1: 'MON',
@@ -57,47 +79,131 @@ def create_schedule():
     if end_time <= start_time:
         return jsonify({"error": "Thời gian kết thúc phải sau thời gian bắt đầu"}), 400
     
-    # Parse specific_date if present
-    specific_date = None
-    if 'specific_date' in data and data['specific_date']:
-        specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
-    
-    # Validate day_of_week
-    day_of_week_num = data.get('day_of_week')
-    if isinstance(day_of_week_num, int):
-        if day_of_week_num < 1 or day_of_week_num > 7:
-            return jsonify({"error": "Ngày trong tuần phải từ 1 (Thứ 2) đến 7 (Chủ nhật)"}), 400
-        day_of_week = DAY_MAP[day_of_week_num]
-    else:
-        day_of_week = data.get('day_of_week')
-        if day_of_week not in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']:
-            return jsonify({"error": "Ngày trong tuần không hợp lệ"}), 400
-    
-    # Check for schedule conflicts in the same classroom
+    # Parse specific_date - Bây giờ là bắt buộc
+    if 'specific_date' not in data or not data['specific_date']:
+        return jsonify({"error": "Ngày cụ thể là bắt buộc"}), 400
+
+    specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
+    class_id = data['class_id']
     classroom_id = data['classroom_id']
-    existing_schedules = Schedule.query.filter(
-        Schedule.classroom_id == classroom_id,
-        Schedule.day_of_week == day_of_week
+    
+    # Kiểm tra lớp học có tồn tại và không bị đánh dấu xóa
+    class_obj = Class.query.get(class_id)
+    if not class_obj:
+        return jsonify({"error": "Lớp học không tồn tại"}), 404
+    
+    if class_obj.is_del:
+        return jsonify({"error": "Không thể thêm lịch học cho lớp đã kết thúc"}), 400
+    
+    # Tính day_of_week từ specific_date
+    day_map = {
+        0: 'MON',  # Monday
+        1: 'TUE', 
+        2: 'WED',
+        3: 'THU',
+        4: 'FRI',
+        5: 'SAT',
+        6: 'SUN'  # Sunday
+    }
+    day_of_week = day_map[specific_date.weekday()]
+    
+    # 1. Check for conflicts within the same class - Prevent multiple schedules for the same class at the same time
+    class_schedules = Schedule.query.filter(
+        Schedule.class_id == class_id,
+        Schedule.specific_date == specific_date
     ).all()
     
-    # Check for time conflicts manually
-    conflicts = []
-    for schedule in existing_schedules:
-        # Case 1: New start time is during an existing schedule
-        if start_time >= schedule.start_time and start_time < schedule.end_time:
-            conflicts.append(schedule)
-        # Case 2: New end time is during an existing schedule
-        elif end_time > schedule.start_time and end_time <= schedule.end_time:
-            conflicts.append(schedule)
-        # Case 3: New schedule completely overlaps an existing schedule
-        elif start_time <= schedule.start_time and end_time >= schedule.end_time:
-            conflicts.append(schedule)
+    for schedule in class_schedules:
+        if is_time_overlapping(start_time, end_time, schedule.start_time, schedule.end_time):
+            return jsonify({
+                "error": "Lớp học này đã có lịch học khác vào cùng thời điểm này"
+            }), 400
     
-    if conflicts:
-        return jsonify({"error": "Lịch học bị trùng với lịch học khác trong cùng phòng học"}), 400
+    # 2. Check for classroom conflicts - Ensure no other class uses this room at this time
+    room_schedules = Schedule.query.filter(
+        Schedule.classroom_id == classroom_id,
+        Schedule.specific_date == specific_date
+    ).all()
     
+    for schedule in room_schedules:
+        if is_time_overlapping(start_time, end_time, schedule.start_time, schedule.end_time):
+            return jsonify({
+                "error": "Phòng học đã được sử dụng bởi lớp khác vào cùng thời điểm này"
+            }), 400
+    
+    # 3. Check for student conflicts - Students can't be in two classes at once
+    # Get all students enrolled in this class
+    students_in_class = ClassStudent.query.filter_by(class_id=class_id).all()
+    student_ids = [s.student_id for s in students_in_class]
+    
+    if student_ids:  # Only check if there are students enrolled
+        # Find all other classes these students are enrolled in
+        other_classes = ClassStudent.query.filter(
+            ClassStudent.student_id.in_(student_ids),
+            ClassStudent.class_id != class_id
+        ).all()
+        other_class_ids = [c.class_id for c in other_classes]
+        
+        if other_class_ids:  # Only check if students are enrolled in other classes
+            # Find schedules for those other classes on the same date
+            conflict_schedules = Schedule.query.filter(
+                Schedule.class_id.in_(other_class_ids),
+                Schedule.specific_date == specific_date
+            ).all()
+            
+            # Check for time conflicts
+            for schedule in conflict_schedules:
+                if is_time_overlapping(start_time, end_time, schedule.start_time, schedule.end_time):
+                    # Find which students have this conflict
+                    conflicted_students = ClassStudent.query.filter(
+                        ClassStudent.class_id == schedule.class_id,
+                        ClassStudent.student_id.in_(student_ids)
+                    ).all()
+                    conflicted_student_ids = [s.student_id for s in conflicted_students]
+                    
+                    return jsonify({
+                        "error": f"Sinh viên đã có lịch học khác vào cùng thời điểm này",
+                        "detail": f"{len(conflicted_student_ids)} sinh viên có lịch trùng với lớp {schedule.class_id}"
+                    }), 400
+    
+    # 4. Check for teacher conflicts - Teachers can't teach two classes at once
+    # Get all teachers for this class
+    teachers_in_class = ClassTeacher.query.filter_by(class_id=class_id).all()
+    teacher_ids = [t.teacher_id for t in teachers_in_class]
+    
+    if teacher_ids:  # Only check if there are teachers assigned
+        # Find all other classes these teachers are teaching
+        other_classes = ClassTeacher.query.filter(
+            ClassTeacher.teacher_id.in_(teacher_ids),
+            ClassTeacher.class_id != class_id
+        ).all()
+        other_class_ids = [c.class_id for c in other_classes]
+        
+        if other_class_ids:  # Only check if teachers teach other classes
+            # Find schedules for those other classes on the same date
+            conflict_schedules = Schedule.query.filter(
+                Schedule.class_id.in_(other_class_ids),
+                Schedule.specific_date == specific_date
+            ).all()
+            
+            # Check for time conflicts
+            for schedule in conflict_schedules:
+                if is_time_overlapping(start_time, end_time, schedule.start_time, schedule.end_time):
+                    # Find which teachers have this conflict
+                    conflicted_teachers = ClassTeacher.query.filter(
+                        ClassTeacher.class_id == schedule.class_id,
+                        ClassTeacher.teacher_id.in_(teacher_ids)
+                    ).all()
+                    conflicted_teacher_ids = [t.teacher_id for t in conflicted_teachers]
+                    
+                    return jsonify({
+                        "error": f"Giáo viên đã có lịch dạy khác vào cùng thời điểm này",
+                        "detail": f"{len(conflicted_teacher_ids)} giáo viên có lịch trùng với lớp {schedule.class_id}"
+                    }), 400
+    
+    # All checks passed, create the new schedule
     new_schedule = Schedule(
-        class_id=data['class_id'],
+        class_id=class_id,
         classroom_id=classroom_id,
         day_of_week=day_of_week,
         start_time=start_time,
@@ -112,8 +218,10 @@ def create_schedule():
 @schedule_bp.route('/schedules', methods=['GET'])
 @auth_required
 def get_schedules():
+    """Lấy danh sách tất cả các lịch học với thông tin chi tiết"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
+    include_deleted = request.args.get('include_deleted', 'false').lower() == 'true'
     
     # Limit per_page to prevent performance issues
     if per_page > 100:
@@ -139,6 +247,10 @@ def get_schedules():
         Campus, Building.campus_id == Campus.id, isouter=True
     )
     
+    # Lọc theo trạng thái is_del của lớp học
+    if not include_deleted:
+        query = query.filter(Class.is_del == False)
+    
     # Filter based on user role
     if g.role == 'student':
         # For students, only show schedules for classes they are enrolled in
@@ -160,17 +272,28 @@ def get_schedules():
     if classroom_id:
         query = query.filter(Schedule.classroom_id == classroom_id)
     
-    day_of_week = request.args.get('day_of_week')
-    if day_of_week:
-        if day_of_week.isdigit():
-            day_num = int(day_of_week)
-            if 1 <= day_num <= 7:
-                query = query.filter(Schedule.day_of_week == DAY_MAP[day_num])
-        else:
-            query = query.filter(Schedule.day_of_week == day_of_week)
+    # Filter by specific date if provided
+    specific_date_str = request.args.get('specific_date')
+    if specific_date_str:
+        try:
+            specific_date = datetime.strptime(specific_date_str, '%Y-%m-%d').date()
+            query = query.filter(Schedule.specific_date == specific_date)
+        except ValueError:
+            pass  # Ignore invalid date format
     
-    # Order by day of week and start time for natural schedule display
-    query = query.order_by(Schedule.day_of_week, Schedule.start_time)
+    # Filter by date range if provided
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            query = query.filter(Schedule.specific_date.between(start_date, end_date))
+        except ValueError:
+            pass  # Ignore invalid date format
+    
+    # Order by specific_date and start_time for natural schedule display
+    query = query.order_by(Schedule.specific_date, Schedule.start_time)
     
     # Get total count for pagination
     total = query.count()
@@ -195,6 +318,7 @@ def get_schedules():
             "subject_id": subject.id if subject else None,
             "subject_code": subject.code if subject else None,
             "subject_name": subject.name if subject else None,
+            "is_del": class_.is_del if class_ else False,
             # Classroom, building and campus information
             "classroom_number": classroom.room_number if classroom else None,
             "building_id": building.id if building else None,
@@ -275,6 +399,7 @@ def get_schedule(id):
         "subject_id": subject.id if subject else None,
         "subject_code": subject.code if subject else None,
         "subject_name": subject.name if subject else None,
+        "is_del": class_.is_del if class_ else False,
         # Classroom, building and campus information
         "classroom_number": classroom.room_number if classroom else None,
         "building_id": building.id if building else None,
@@ -291,71 +416,158 @@ def update_schedule(id):
     data = request.get_json()
     schedule = Schedule.query.get_or_404(id)
     
+    # Capture current values to use if not updated
     start_time = schedule.start_time
     end_time = schedule.end_time
-    day_of_week = schedule.day_of_week
     classroom_id = schedule.classroom_id
     specific_date = schedule.specific_date
+    class_id = schedule.class_id
     
+    # Update values with new data if provided
     if 'start_time' in data:
         start_time = datetime.strptime(data['start_time'], '%H:%M').time()
     if 'end_time' in data:
         end_time = datetime.strptime(data['end_time'], '%H:%M').time()
         
     if 'specific_date' in data:
-        if data['specific_date']:
-            specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
-        else:
-            specific_date = None
-            
-    if 'day_of_week' in data:
-        day_of_week_data = data['day_of_week']
-        if isinstance(day_of_week_data, int):
-            if day_of_week_data < 1 or day_of_week_data > 7:
-                return jsonify({"error": "Ngày trong tuần phải từ 1 (Thứ 2) đến 7 (Chủ nhật)"}), 400
-            day_of_week = DAY_MAP[day_of_week_data]
-        else:
-            if day_of_week_data not in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']:
-                return jsonify({"error": "Ngày trong tuần không hợp lệ"}), 400
-            day_of_week = day_of_week_data
+        if not data['specific_date']:
+            return jsonify({"error": "Ngày cụ thể là bắt buộc"}), 400
+        specific_date = datetime.strptime(data['specific_date'], '%Y-%m-%d').date()
             
     if 'classroom_id' in data:
         classroom_id = data['classroom_id']
+        
+    if 'class_id' in data:
+        class_id = data['class_id']
+        
+    # Kiểm tra lớp học có tồn tại và không bị đánh dấu xóa
+    class_obj = Class.query.get(class_id)
+    if not class_obj:
+        return jsonify({"error": "Lớp học không tồn tại"}), 404
+    
+    if class_obj.is_del:
+        return jsonify({"error": "Không thể cập nhật lịch học cho lớp đã kết thúc"}), 400
     
     # Validate end_time is after start_time
     if end_time <= start_time:
         return jsonify({"error": "Thời gian kết thúc phải sau thời gian bắt đầu"}), 400
     
-    # Check for schedule conflicts in the same classroom (excluding this schedule)
-    existing_schedules = Schedule.query.filter(
-        Schedule.id != id,
-        Schedule.classroom_id == classroom_id,
-        Schedule.day_of_week == day_of_week
+    # Tính day_of_week từ specific_date
+    day_map = {
+        0: 'MON',  # Monday
+        1: 'TUE', 
+        2: 'WED',
+        3: 'THU',
+        4: 'FRI',
+        5: 'SAT',
+        6: 'SUN'  # Sunday
+    }
+    day_of_week = day_map[specific_date.weekday()]
+    
+    # 1. Check for conflicts within the same class - Prevent multiple schedules for the same class at the same time
+    class_schedules = Schedule.query.filter(
+        Schedule.id != id,  # Exclude current schedule
+        Schedule.class_id == class_id,
+        Schedule.specific_date == specific_date
     ).all()
     
-    # Check for time conflicts manually
-    conflicts = []
-    for existing in existing_schedules:
-        # Case 1: New start time is during an existing schedule
-        if start_time >= existing.start_time and start_time < existing.end_time:
-            conflicts.append(existing)
-        # Case 2: New end time is during an existing schedule
-        elif end_time > existing.start_time and end_time <= existing.end_time:
-            conflicts.append(existing)
-        # Case 3: New schedule completely overlaps an existing schedule
-        elif start_time <= existing.start_time and end_time >= existing.end_time:
-            conflicts.append(existing)
+    for existing in class_schedules:
+        if is_time_overlapping(start_time, end_time, existing.start_time, existing.end_time):
+            return jsonify({
+                "error": "Lớp học này đã có lịch học khác vào cùng thời điểm này"
+            }), 400
     
-    if conflicts:
-        return jsonify({"error": "Lịch học bị trùng với lịch học khác trong cùng phòng học"}), 400
+    # 2. Check for classroom conflicts - Ensure no other class uses this room at this time
+    room_schedules = Schedule.query.filter(
+        Schedule.id != id,  # Exclude current schedule
+        Schedule.classroom_id == classroom_id,
+        Schedule.specific_date == specific_date
+    ).all()
     
-    # Update fields
+    for existing in room_schedules:
+        if is_time_overlapping(start_time, end_time, existing.start_time, existing.end_time):
+            return jsonify({
+                "error": "Phòng học đã được sử dụng bởi lớp khác vào cùng thời điểm này"
+            }), 400
+    
+    # 3. Check for student conflicts - Students can't be in two classes at once
+    # Get all students enrolled in this class
+    students_in_class = ClassStudent.query.filter_by(class_id=class_id).all()
+    student_ids = [s.student_id for s in students_in_class]
+    
+    if student_ids:  # Only check if there are students enrolled
+        # Find all other classes these students are enrolled in
+        other_classes = ClassStudent.query.filter(
+            ClassStudent.student_id.in_(student_ids),
+            ClassStudent.class_id != class_id
+        ).all()
+        other_class_ids = [c.class_id for c in other_classes]
+        
+        if other_class_ids:  # Only check if students are enrolled in other classes
+            # Find schedules for those other classes on the same date
+            conflict_schedules = Schedule.query.filter(
+                Schedule.id != id,  # Exclude current schedule
+                Schedule.class_id.in_(other_class_ids),
+                Schedule.specific_date == specific_date
+            ).all()
+            
+            # Check for time conflicts
+            for existing in conflict_schedules:
+                if is_time_overlapping(start_time, end_time, existing.start_time, existing.end_time):
+                    # Find which students have this conflict
+                    conflicted_students = ClassStudent.query.filter(
+                        ClassStudent.class_id == existing.class_id,
+                        ClassStudent.student_id.in_(student_ids)
+                    ).all()
+                    conflicted_student_ids = [s.student_id for s in conflicted_students]
+                    
+                    return jsonify({
+                        "error": f"Sinh viên đã có lịch học khác vào cùng thời điểm này",
+                        "detail": f"{len(conflicted_student_ids)} sinh viên có lịch trùng với lớp {existing.class_id}"
+                    }), 400
+    
+    # 4. Check for teacher conflicts - Teachers can't teach two classes at once
+    # Get all teachers for this class
+    teachers_in_class = ClassTeacher.query.filter_by(class_id=class_id).all()
+    teacher_ids = [t.teacher_id for t in teachers_in_class]
+    
+    if teacher_ids:  # Only check if there are teachers assigned
+        # Find all other classes these teachers are teaching
+        other_classes = ClassTeacher.query.filter(
+            ClassTeacher.teacher_id.in_(teacher_ids),
+            ClassTeacher.class_id != class_id
+        ).all()
+        other_class_ids = [c.class_id for c in other_classes]
+        
+        if other_class_ids:  # Only check if teachers teach other classes
+            # Find schedules for those other classes on the same date
+            conflict_schedules = Schedule.query.filter(
+                Schedule.id != id,  # Exclude current schedule
+                Schedule.class_id.in_(other_class_ids),
+                Schedule.specific_date == specific_date
+            ).all()
+            
+            # Check for time conflicts
+            for existing in conflict_schedules:
+                if is_time_overlapping(start_time, end_time, existing.start_time, existing.end_time):
+                    # Find which teachers have this conflict
+                    conflicted_teachers = ClassTeacher.query.filter(
+                        ClassTeacher.class_id == existing.class_id,
+                        ClassTeacher.teacher_id.in_(teacher_ids)
+                    ).all()
+                    conflicted_teacher_ids = [t.teacher_id for t in conflicted_teachers]
+                    
+                    return jsonify({
+                        "error": f"Giáo viên đã có lịch dạy khác vào cùng thời điểm này",
+                        "detail": f"{len(conflicted_teacher_ids)} giáo viên có lịch trùng với lớp {existing.class_id}"
+                    }), 400
+    
+    # All checks passed, update the schedule
     if 'class_id' in data:
-        schedule.class_id = data['class_id']
+        schedule.class_id = class_id
     if 'classroom_id' in data:
         schedule.classroom_id = classroom_id
-    if 'day_of_week' in data:
-        schedule.day_of_week = day_of_week
+    schedule.day_of_week = day_of_week  # Always update day_of_week based on date
     if 'start_time' in data:
         schedule.start_time = start_time
     if 'end_time' in data:
@@ -374,4 +586,69 @@ def delete_schedule(id):
     schedule = Schedule.query.get_or_404(id)
     db.session.delete(schedule)
     db.session.commit()
-    return jsonify({"message": "Lịch học đã được xóa thành công"}) 
+    return jsonify({"message": "Lịch học đã được xóa thành công"})
+
+@schedule_bp.route('/class/<int:class_id>/schedules', methods=['GET'])
+@auth_required
+def get_class_schedules(class_id):
+    """Lấy danh sách lịch học của một lớp học cụ thể"""
+    try:
+        # Kiểm tra lớp học có tồn tại và không bị đánh dấu xóa
+        class_obj = Class.query.get(class_id)
+        if not class_obj:
+            return jsonify({"error": "Lớp học không tồn tại"}), 404
+        
+        # Lấy ngày hiện tại
+        current_date = date.today()
+        
+        # Kiểm tra nếu có tham số specific_date trong query
+        specific_date_str = request.args.get('specific_date')
+        if specific_date_str:
+            try:
+                # Nếu có tham số, sử dụng ngày từ tham số
+                current_date = datetime.strptime(specific_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass  # Sử dụng ngày hiện tại nếu định dạng không hợp lệ
+        
+        # Lấy tất cả lịch học của lớp này VÀ ngày hiện tại
+        schedules = Schedule.query.filter(
+            Schedule.class_id == class_id,
+            Schedule.specific_date == current_date
+        ).all()
+        
+        result = []
+        for schedule in schedules:
+            # Thông tin phòng học
+            classroom = Classroom.query.get(schedule.classroom_id)
+            building = Building.query.get(classroom.building_id) if classroom else None
+            campus = Campus.query.get(building.campus_id) if building else None
+            
+            # Chuyển đổi từ enum sang tên đầy đủ của ngày trong tuần
+            day_names = {
+                'MON': 'Thứ hai',
+                'TUE': 'Thứ ba',
+                'WED': 'Thứ tư',
+                'THU': 'Thứ năm',
+                'FRI': 'Thứ sáu',
+                'SAT': 'Thứ bảy',
+                'SUN': 'Chủ nhật'
+            }
+            
+            result.append({
+                "id": schedule.id,
+                "class_id": schedule.class_id,
+                "day_of_week": day_names.get(schedule.day_of_week, schedule.day_of_week),
+                "start_time": format_time(schedule.start_time),
+                "end_time": format_time(schedule.end_time),
+                "specific_date": format_date(schedule.specific_date),
+                "classroom_id": schedule.classroom_id,
+                "room_number": classroom.room_number if classroom else None,
+                "building_id": building.id if building else None,
+                "building_name": building.name if building else None,
+                "campus_id": campus.id if campus else None,
+                "campus_name": campus.name if campus else None
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

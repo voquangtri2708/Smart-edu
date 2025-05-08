@@ -32,6 +32,30 @@ def auth_required(f):
             return jsonify({"message": "Token không hợp lệ"}), 401
     return decorated_function
 
+def get_current_user():
+    """
+    Lấy thông tin người dùng hiện tại từ Flask g object
+    Trả về một từ điển chứa:
+    - user_id: ID của tài khoản người dùng
+    - role: Vai trò (admin, student, teacher)
+    - id: student_id hoặc teacher_id tùy thuộc vào role
+    """
+    if not hasattr(g, 'user_id'):
+        return None
+    
+    user = {
+        "user_id": g.user_id,
+        "role": g.role
+    }
+    
+    # Thêm student_id hoặc teacher_id tùy thuộc vào role
+    if g.role == 'student' and hasattr(g, 'student_id'):
+        user["id"] = g.student_id
+    elif g.role == 'teacher' and hasattr(g, 'teacher_id'):
+        user["id"] = g.teacher_id
+    
+    return user
+
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -43,6 +67,49 @@ def admin_required(f):
             return jsonify({"message": "Bạn không có quyền thực hiện hành động này"}), 403
             
         return f(*args, **kwargs)
+    return decorated_function
+
+# Add student_required decorator
+def student_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_required_result = auth_required(lambda *a, **kw: None)(*args, **kwargs)
+        if isinstance(auth_required_result, tuple):
+            return auth_required_result
+            
+        if g.role != 'student' or not g.student_id:
+            return jsonify({"message": "Bạn không có quyền thực hiện hành động này. Cần đăng nhập với tài khoản học sinh."}), 403
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Add teacher_required decorator
+def teacher_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_required_result = auth_required(lambda *a, **kw: None)(*args, **kwargs)
+        if isinstance(auth_required_result, tuple):
+            return auth_required_result
+            
+        if g.role != 'teacher' or not g.teacher_id:
+            return jsonify({"message": "Bạn không có quyền thực hiện hành động này. Cần đăng nhập với tài khoản giáo viên."}), 403
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Add the missing teacher_or_admin_required decorator
+def teacher_or_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_required_result = auth_required(lambda *a, **kw: None)(*args, **kwargs)
+        if isinstance(auth_required_result, tuple):
+            return auth_required_result
+            
+        # Allow admin and teacher roles
+        if g.role in ['admin', 'teacher']:
+            return f(*args, **kwargs)
+            
+        return jsonify({"message": "Bạn không có quyền thực hiện hành động này"}), 403
     return decorated_function
 
 # Thêm decorator mới cho student hoặc admin

@@ -7,6 +7,7 @@ class Class(db.Model):
     max_student = db.Column(db.Integer, nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
+    is_del = db.Column(db.Boolean, default=False, nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'))
 
     def __repr__(self):

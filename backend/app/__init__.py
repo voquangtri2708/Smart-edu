@@ -39,13 +39,18 @@ def create_app():
     from app.routes.classroom import classroom_bp
     from app.routes.feedback_availability import feedback_availability_bp
     from app.routes.feedback import feedback_bp
+    from app.routes.feedback_stats import feedback_stats_bp
     from app.routes.avatar import avatar_bp
     from app.routes.grade_type import grade_type_bp
     from app.routes.schedule import schedule_bp
     from app.routes.attendance import attendance_bp
     from app.routes.grade import grade_bp
     from app.routes.exam import exam_bp
+    from app.routes.question import question_bp
     from app.routes.notification import notification_bp
+    from app.routes.student_exam import student_exam_bp
+    from app.routes.student_exam_answer import student_exam_answer_bp
+    from app.routes.face_recognition import face_recognition_bp
 
     app.register_blueprint(account_bp, url_prefix="/api")
     app.register_blueprint(class_bp, url_prefix="/api")
@@ -59,11 +64,17 @@ def create_app():
     app.register_blueprint(classroom_bp, url_prefix="/api")
     app.register_blueprint(feedback_availability_bp, url_prefix="/api")
     app.register_blueprint(feedback_bp, url_prefix="/api")
+    app.register_blueprint(feedback_stats_bp, url_prefix="/api")
     app.register_blueprint(avatar_bp, url_prefix="/api")
     app.register_blueprint(grade_type_bp, url_prefix='/api')
     app.register_blueprint(schedule_bp, url_prefix='/api')
     app.register_blueprint(attendance_bp, url_prefix="/api")
     app.register_blueprint(grade_bp, url_prefix="/api")
+    app.register_blueprint(exam_bp, url_prefix="/api")
+    app.register_blueprint(question_bp, url_prefix="/api")
     app.register_blueprint(notification_bp, url_prefix="/api")
+    app.register_blueprint(student_exam_bp, url_prefix='/api')
+    app.register_blueprint(student_exam_answer_bp, url_prefix='/api')
+    app.register_blueprint(face_recognition_bp, url_prefix='/api')
     
     return app

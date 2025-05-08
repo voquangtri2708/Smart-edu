@@ -307,8 +307,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, onBeforeMount } from 'vue';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
@@ -374,7 +374,7 @@ onMounted(async () => {
 const fetchTeachers = async () => {
   try {
     const token = localStorage.getItem('auth_token');
-    const response = await axios.get('http://localhost:5000/api/teachers', {
+    const response = await api.get('/teachers', {
       params: {
         page: currentPage.value,
         per_page: pageSize.value,
@@ -541,7 +541,7 @@ const saveTeacher = async () => {
       // Xử lý avatar nếu có
       if (teacherData.avatar_data) {
         // Upload avatar trước
-        const avatarResponse = await axios.post('http://localhost:5000/api/upload-avatar', {
+        const avatarResponse = await api.post('/upload-avatar', {
           image: teacherData.avatar_data,
           teacher_id: teacherData.id  // Thêm teacher_id để API biết cập nhật cho ai
         }, {
@@ -553,7 +553,7 @@ const saveTeacher = async () => {
         delete teacherData.avatar_data;
       }
       
-      await axios.put(`http://localhost:5000/api/teachers/${teacherData.id}`, teacherData, {
+      await api.put(`/teachers/${teacherData.id}`, teacherData, {
         headers: { 'Authorization': token }
       });
       
@@ -562,42 +562,32 @@ const saveTeacher = async () => {
       // Create new teacher
       const teacherData = { ...currentTeacher.value };
       
-      // Xử lý avatar nếu có
-      let avatarUrl = null;
-      let avatarData = null;  // Declare outside the if block
-      if (teacherData.avatar_data) {
-        delete teacherData.avatar_url; // Xóa URL tạm thời
-        
-        // Lưu lại dữ liệu avatar để dùng sau
-        avatarData = teacherData.avatar_data;  // Assign to the variable
-        delete teacherData.avatar_data; // Xóa dữ liệu ảnh tạm thời
-      }
-      
       // Tạo giảng viên
-      await axios.post('http://localhost:5000/api/teachers', teacherData, {
+      const response = await api.post('/teachers', teacherData, {
         headers: { 'Authorization': token }
       });
       
       // Create account for new teacher
       if (accountData.value.username && accountData.value.password) {
-        await axios.post('http://localhost:5000/api/accounts', {
+        await api.post('/accounts', {
           username: accountData.value.username,
           password: accountData.value.password,
-          email: currentTeacher.value.email,
-          phone_number: currentTeacher.value.phone_number,
-          role: 'teacher',
-          teacher_id: currentTeacher.value.id,
-          bio: currentTeacher.value.bio,
-          is_active: true
+          identity_type: 'TEACHER',
+          identity_id: response.data.id
         }, {
           headers: { 'Authorization': token }
         });
+      }
+      
+      // Đợi ID được trả về sau khi tạo xong
+      if (response.data && response.data.id) {
+        teacherData.id = response.data.id;
         
         // Upload avatar nếu có
-        if (avatarData) {
-          await axios.post('http://localhost:5000/api/upload-avatar', {
-            image: avatarData,
-            teacher_id: currentTeacher.value.id  // Thêm teacher_id để API biết cập nhật cho ai
+        if (currentTeacher.value.avatar_data) {
+          await api.post('/upload-avatar', {
+            image: currentTeacher.value.avatar_data,
+            teacher_id: teacherData.id
           }, {
             headers: { 'Authorization': token }
           });
@@ -611,6 +601,7 @@ const saveTeacher = async () => {
     Modal.getInstance(teacherModal.value).hide();
     await fetchTeachers();
   } catch (error) {
+    console.error('Error saving teacher:', error);
     showMessage('Đã xảy ra lỗi: ' + (error.response?.data?.message || error.message), 'danger');
   } finally {
     processing.value = false;
@@ -621,7 +612,7 @@ const deleteTeacher = async () => {
   processing.value = true;
   try {
     const token = localStorage.getItem('auth_token');
-    await axios.delete(`http://localhost:5000/api/teachers/${deleteTeacherId.value}`, {
+    await api.delete(`/teachers/${deleteTeacherId.value}`, {
       headers: {
         'Authorization': token
       }

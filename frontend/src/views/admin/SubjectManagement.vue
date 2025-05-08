@@ -253,14 +253,14 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue';
-import axios from 'axios';
+import { ref, reactive, onMounted, watch } from 'vue';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import Pagination from '@/components/Pagination.vue';
+import { debounce } from '@/utils/debounce';
 import VueFlatpickr from 'vue-flatpickr-component';
 import 'flatpickr/dist/flatpickr.css';
 import Vietnamese from 'flatpickr/dist/l10n/vn.js';
-import { debounce } from '@/utils/debounce';
 
 export default {
   name: 'SubjectManagement',
@@ -339,7 +339,7 @@ export default {
       loading.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.get('http://localhost:5000/api/subjects', {
+        const response = await api.get('/subjects', {
           params: {
             page: currentPage.value,
             per_page: pageSize.value,
@@ -450,7 +450,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.post('http://localhost:5000/api/subjects', currentSubject, {
+        await api.post('/subjects', currentSubject, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -478,7 +478,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.put(`http://localhost:5000/api/subjects/${currentSubject.id}`, currentSubject, {
+        await api.put(`/subjects/${currentSubject.id}`, currentSubject, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -521,7 +521,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.delete(`http://localhost:5000/api/subjects/${deleteSubjectId.value}`, {
+        await api.delete(`/subjects/${deleteSubjectId.value}`, {
           headers: {
             'Authorization': token
           }
@@ -598,7 +598,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.post('http://localhost:5000/api/classes', newClass, {
+        await api.post('/classes', newClass, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'

@@ -19,10 +19,16 @@
           <router-link to="/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/student/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3 me-2"></i>Lịch học
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/student/attendance" class="submenu-item" active-class="active">
+            <i class="bi bi-check-circle me-2"></i>Điểm danh
+          </router-link>
+          <router-link to="/student/exams" class="submenu-item" active-class="active">
+            <i class="bi bi-journal-check me-2"></i>Lịch kiểm tra
+          </router-link>
+          <router-link to="/student/grades" class="submenu-item" active-class="active">
             <i class="bi bi-table me-2"></i>Bảng điểm
           </router-link>
         </div>
@@ -75,11 +81,23 @@
           <router-link to="/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/teacher/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
           </router-link>
-          <router-link to="#" class="submenu-item">
+          <router-link to="/teacher/attendance" class="submenu-item" active-class="active">
+            <i class="bi bi-check-circle me-2"></i>Quản lý điểm danh
+          </router-link>
+          <router-link to="/teacher/grade-entry" class="submenu-item" active-class="active">
             <i class="bi bi-pencil-square me-2"></i>Nhập điểm sinh viên
+          </router-link>
+          <router-link to="/teacher/questions" class="submenu-item" active-class="active">
+            <i class="bi bi-question-circle me-2"></i>Ngân hàng câu hỏi
+          </router-link>
+          <router-link to="/teacher/exams" class="submenu-item" active-class="active">
+            <i class="bi bi-file-earmark-text me-2"></i>Quản lý đợt thi
+          </router-link>
+          <router-link to="/teacher/exams/grading" class="submenu-item" active-class="active">
+            <i class="bi bi-check-square me-2"></i>Chấm điểm bài thi
           </router-link>
         </div>
         
@@ -133,6 +151,9 @@
           <router-link to="/feedbacks" class="submenu-item" active-class="active">
             <i class="bi bi-clipboard-data me-2"></i>Quản lý đánh giá
           </router-link>
+          <router-link to="/admin/stats/feedback" class="submenu-item" active-class="active">
+            <i class="bi bi-bar-chart me-2"></i>Báo cáo và thống kê đánh giá
+          </router-link>
         </div>
         
         <!-- Quản lý chương trình học -->
@@ -153,6 +174,12 @@
           </router-link>
           <router-link to="/admin/schedules" class="submenu-item" active-class="active">
             <i class="bi bi-clock me-2"></i>Quản lý lịch học
+          </router-link>
+          <router-link to="/admin/questions" class="submenu-item" active-class="active">
+            <i class="bi bi-question-circle me-2"></i>Ngân hàng câu hỏi
+          </router-link>
+          <router-link to="/admin/grade-types" class="submenu-item" active-class="active">
+            <i class="bi bi-percent me-2"></i>Quản lý loại điểm
           </router-link>
         </div>
         
@@ -227,7 +254,7 @@ const highlightActiveMenu = () => {
   // Mở menu phù hợp với route hiện tại
   if (path.includes('student-feedbacks')) {
     menuOpen.value.survey = true;
-  } else if (path.includes('feedbacks')) {
+  } else if (path.includes('feedbacks') || path.includes('admin/stats/feedback')) {
     menuOpen.value.management = true;
   } else if (path.includes('admin/students')) {
     menuOpen.value.users = true;
@@ -237,6 +264,12 @@ const highlightActiveMenu = () => {
     menuOpen.value.curriculum = true;
   } else if (path.includes('admin/classes')) {
     menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/schedules')) {
+    menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/questions')) {
+    menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/grade-types')) {
+    menuOpen.value.curriculum = true;
   } else if (path.includes('admin/campuses')) {
     menuOpen.value.campuses = true;
   } else if (path.includes('profile/student')) {
@@ -245,6 +278,23 @@ const highlightActiveMenu = () => {
     menuOpen.value.profile = true;
   } else if (path.includes('/subjects')) {
     menuOpen.value.study = true;
+  } else if (path.includes('student/schedule')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('student/attendance')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('student/grades')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('student/exams')) {
+    menuOpen.value.study = true;
+  } else if (path.includes('teacher/schedule')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/attendance')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/grade-entry')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/questions')) {
+    menuOpen.value.teaching = true;
+  } else if (path.includes('teacher/exams')) {
     menuOpen.value.teaching = true;
   }
 };

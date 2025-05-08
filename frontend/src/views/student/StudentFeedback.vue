@@ -72,7 +72,7 @@
                         <span>{{ getInitials(teacher.first_name, teacher.last_name) }}</span>
                       </div>
                       <div>
-                        <h5 class="card-title mb-1">{{ teacher.first_name }} {{ teacher.last_name }}</h5>
+                        <h5 class="card-title mb-1">{{ teacher.last_name }} {{ teacher.first_name }}</h5>
                         <p class="card-subtitle text-muted small mb-0">
                           <i class="bi bi-envelope me-1"></i> {{ teacher.email }}
                         </p>
@@ -123,7 +123,7 @@
                         <i class="bi bi-building"></i>
                       </div>
                       <div>
-                        <h5 class="card-title mb-1">Phòng {{ classroom.room_number }}</h5>
+                        <h5 class="card-title mb-1">Phòng {{ classroom.room_number }} - {{ classroom.building_name }} - {{ classroom.campus_name }}</h5>
                         <p class="card-subtitle text-muted small mb-0">
                           <i class="bi bi-people me-1"></i> Sức chứa: {{ classroom.capacity }} người
                         </p>
@@ -187,7 +187,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import { Toast } from 'bootstrap';
-import api from '../utils/api'; // Import API utility
+import api from '../../utils/api'; // Import API utility
 
 const studentId = ref(''); // Lấy từ localStorage khi tích hợp authentication
 const classes = ref([]);

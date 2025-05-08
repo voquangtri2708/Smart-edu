@@ -171,7 +171,7 @@
 
 <script>
 import { ref, reactive, onMounted, computed } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal } from 'bootstrap';
 import Pagination from '@/components/Pagination.vue';
 import { debounce } from '@/utils/debounce';
@@ -280,7 +280,7 @@ export default {
         
         console.log("Fetching classrooms with building_id:", currentBuildingId.value);
         
-        const response = await axios.get('http://localhost:5000/api/classrooms', {
+        const response = await api.get('/classrooms', {
           params: {
             page: currentPage.value,
             per_page: pageSize.value,
@@ -384,7 +384,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.post('http://localhost:5000/api/classrooms', currentClassroom, {
+        await api.post('/classrooms', currentClassroom, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -412,7 +412,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.put(`http://localhost:5000/api/classrooms/${currentClassroom.id}`, currentClassroom, {
+        await api.put(`/classrooms/${currentClassroom.id}`, currentClassroom, {
           headers: {
             'Authorization': token,
             'Content-Type': 'application/json'
@@ -454,7 +454,7 @@ export default {
       processing.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.delete(`http://localhost:5000/api/classrooms/${deleteClassroomId.value}`, {
+        await api.delete(`/classrooms/${deleteClassroomId.value}`, {
           headers: {
             'Authorization': token
           }

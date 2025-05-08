@@ -241,7 +241,7 @@
 
 <script>
 import { ref, reactive, onMounted, computed } from 'vue';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Modal, Toast } from 'bootstrap';
 import Pagination from '@/components/Pagination.vue';
 import { debounce } from '@/utils/debounce';
@@ -321,7 +321,7 @@ export default {
     const fetchClassInfo = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.get(`http://localhost:5000/api/classes/${props.id}`, {
+        const response = await api.get(`/classes/${props.id}`, {
           headers: {
             'Authorization': token
           }
@@ -338,7 +338,7 @@ export default {
         // Fetch subject name if subject_id exists
         if (classData.subject_id) {
           try {
-            const subjectResponse = await axios.get(`http://localhost:5000/api/subjects/${classData.subject_id}`, {
+            const subjectResponse = await api.get(`/subjects/${classData.subject_id}`, {
               headers: {
                 'Authorization': token
               }
@@ -360,7 +360,7 @@ export default {
       loading.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.get(`http://localhost:5000/api/class_students/class/${props.id}/students`, {
+        const response = await api.get(`/class_students/class/${props.id}/students`, {
           params: {
             page: currentPage.value,
             per_page: pageSize.value,
@@ -445,7 +445,7 @@ export default {
     const searchAvailableStudents = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        const response = await axios.get('http://localhost:5000/api/students', {
+        const response = await api.get('/students', {
           params: {
             query: searchStudentQuery.value,
             page: 1,
@@ -460,7 +460,7 @@ export default {
           const allStudents = response.data.items;
           
           // Filter out students already in the class
-          const classStudentsResponse = await axios.get(`http://localhost:5000/api/class_students`, {
+          const classStudentsResponse = await api.get(`/class_students`, {
             params: {
               class_id: props.id
             },
@@ -499,7 +499,7 @@ export default {
       processingStudentId.value = studentId;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.post('http://localhost:5000/api/class_students', {
+        await api.post('/class_students', {
           class_id: props.id,
           student_id: studentId
         }, {
@@ -551,7 +551,7 @@ export default {
       processingRemove.value = true;
       try {
         const token = localStorage.getItem('auth_token');
-        await axios.delete(`http://localhost:5000/api/class_students/${props.id}/${selectedStudent.id}`, {
+        await api.delete(`/class_students/${props.id}/${selectedStudent.id}`, {
           headers: {
             'Authorization': token
           }

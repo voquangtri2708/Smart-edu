@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify, g
 from app import db
 from app.models.student import Student
-from app.utils.auth import auth_required, admin_required, student_self_or_admin_required
+from app.models.class_student import ClassStudent
+from app.models.classs import Class
+from app.utils.auth import auth_required, admin_required, student_required, student_self_or_admin_required
 from datetime import datetime
 from app.ml.faces import encode_face
 
@@ -143,3 +145,36 @@ def delete_student(id):
     db.session.delete(student)
     db.session.commit()
     return jsonify({"message": "Student deleted successfully"})
+
+@student_bp.route('/student/classes', methods=['GET'])
+@student_required
+def get_student_classes():
+    """Lấy danh sách lớp học của sinh viên hiện tại"""
+    student_id = g.student_id
+    
+    try:
+        # Lấy danh sách class_id từ bảng class_student
+        class_students = ClassStudent.query.filter_by(student_id=student_id).all()
+        class_ids = [cs.class_id for cs in class_students]
+        
+        # Lấy thông tin chi tiết các lớp học
+        classes = Class.query.filter(Class.id.in_(class_ids)).all()
+        
+        result = []
+        for class_ in classes:
+            # Kiểm tra lớp có đang diễn ra
+            is_active = class_.end_date >= datetime.now().date()
+            
+            result.append({
+                "id": class_.id,
+                "code": class_.code,
+                "subject_id": class_.subject_id,
+                "max_student": class_.max_student,
+                "start_date": class_.start_date.strftime('%Y-%m-%d'),
+                "end_date": class_.end_date.strftime('%Y-%m-%d'),
+                "is_active": is_active
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

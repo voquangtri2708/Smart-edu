@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-// Create instance of axios with base URL
+// Create instance of axios with base URL từ biến môi trường
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: import.meta.env.VITE_API_BASE_URL + '/api',
+  timeout: 30000, // 30 giây
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 });
 
 // Add request interceptor to include JWT token in headers
@@ -27,6 +32,7 @@ api.interceptors.response.use(
   (error) => {
     // Không tự động đăng xuất và chuyển hướng khi gặp lỗi 401
     // Người dùng sẽ phải đăng xuất thủ công
+    console.error('API Error:', error);
     return Promise.reject(error);
   }
 );
