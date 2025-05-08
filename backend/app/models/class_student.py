@@ -1,7 +1,7 @@
 from app import db
 
 class ClassStudent(db.Model):
-    class_id = db.Column(db.String(11), db.ForeignKey('class.id'), primary_key=True)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id'), primary_key=True)
     student_id = db.Column(db.String(11), db.ForeignKey('student.id'), primary_key=True)
 
     def __repr__(self):
