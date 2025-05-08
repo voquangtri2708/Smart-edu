@@ -53,7 +53,7 @@
           <div class="mb-4">
             <i class="bi bi-check-circle fs-1 text-success"></i>
             <h5 class="mt-2">Xác thực thành công!</h5>
-            <p>Xin chào, {{ userInfo.first_name }} {{ userInfo.last_name }}</p>
+            <p>Xin chào, {{ userInfo.last_name }} {{ userInfo.first_name }}</p>
           </div>
           
           <div class="mb-3">
