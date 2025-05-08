@@ -264,6 +264,12 @@ const highlightActiveMenu = () => {
     menuOpen.value.curriculum = true;
   } else if (path.includes('admin/classes')) {
     menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/schedules')) {
+    menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/questions')) {
+    menuOpen.value.curriculum = true;
+  } else if (path.includes('admin/grade-types')) {
+    menuOpen.value.curriculum = true;
   } else if (path.includes('admin/campuses')) {
     menuOpen.value.campuses = true;
   } else if (path.includes('profile/student')) {
