@@ -603,11 +603,11 @@ def generate_feedback_report():
         neutral_percent = round((neutral_feedbacks / total_feedbacks * 100), 1) if total_feedbacks > 0 else 0
         negative_percent = round((negative_feedbacks / total_feedbacks * 100), 1) if total_feedbacks > 0 else 0
         
-        # Filter only negative feedbacks for Gemini analysis
-        negative_feedbacks_data = [f for f in all_feedbacks if f['sentiment'] == 'NEGATIVE']
+        # Filter negative and neutral feedbacks for Gemini analysis
+        analysis_feedbacks_data = [f for f in all_feedbacks if f['sentiment'] in ['NEGATIVE', 'NEUTRAL']]
         
-        if not negative_feedbacks_data:
-            return jsonify({"message": "Không có phản hồi tiêu cực trong khoảng thời gian đã chọn"}), 404
+        if not analysis_feedbacks_data:
+            return jsonify({"message": "Không có phản hồi tiêu cực hoặc trung lập trong khoảng thời gian đã chọn"}), 404
         
         # Get the API key for Gemini
         api_key = os.environ.get('GEMINI_API_KEY')
@@ -624,27 +624,27 @@ def generate_feedback_report():
         # Set a threshold for maximum number of feedbacks to send at once
         MAX_FEEDBACK_BATCH = 50
         
-        # If negative feedbacks exceed threshold, process in batches
+        # If analysis feedbacks exceed threshold, process in batches
         gemini_response = ""
-        if len(negative_feedbacks_data) > MAX_FEEDBACK_BATCH:
-            logging.info(f"Processing {len(negative_feedbacks_data)} negative feedbacks in batches")
+        if len(analysis_feedbacks_data) > MAX_FEEDBACK_BATCH:
+            logging.info(f"Processing {len(analysis_feedbacks_data)} negative and neutral feedbacks in batches")
             
             # Calculate number of batches needed
-            num_batches = (len(negative_feedbacks_data) + MAX_FEEDBACK_BATCH - 1) // MAX_FEEDBACK_BATCH
+            num_batches = (len(analysis_feedbacks_data) + MAX_FEEDBACK_BATCH - 1) // MAX_FEEDBACK_BATCH
             summary_so_far = ""
             
             for batch_num in range(num_batches):
                 start_idx = batch_num * MAX_FEEDBACK_BATCH
-                end_idx = min((batch_num + 1) * MAX_FEEDBACK_BATCH, len(negative_feedbacks_data))
+                end_idx = min((batch_num + 1) * MAX_FEEDBACK_BATCH, len(analysis_feedbacks_data))
                 
-                current_batch = negative_feedbacks_data[start_idx:end_idx]
+                current_batch = analysis_feedbacks_data[start_idx:end_idx]
                 logging.info(f"Processing batch {batch_num + 1}/{num_batches} with {len(current_batch)} feedbacks")
                 
                 # Create a batch prompt
                 batch_prompt = (
                     (f"Dưới đây là bản tóm tắt từ phần trước: \n\n{summary_so_far}\n\n" if summary_so_far else "") +
-                    f"Hãy tóm tắt và phân tích những phản hồi tiêu cực dưới đây từ sinh viên.\n" +
-                    f"Đây là batch {batch_num + 1}/{num_batches} của phản hồi tiêu cực.\n" +
+                    f"Hãy tóm tắt và phân tích những phản hồi tiêu cực và trung lập dưới đây từ sinh viên.\n" +
+                    f"Đây là batch {batch_num + 1}/{num_batches} của phản hồi tiêu cực và trung lập.\n" +
                     f"Xác định các vấn đề chính và tạo tóm tắt ngắn gọn về các điểm đáng chú ý."
                 )
 
@@ -663,7 +663,7 @@ def generate_feedback_report():
                 
             # Use the final summary to generate the report
             final_prompt = f"""
-            Dựa trên bản tóm tắt phản hồi tiêu cực dưới đây:
+            Dựa trên bản tóm tắt phản hồi tiêu cực và trung lập dưới đây:
             
             {summary_so_far}
             
@@ -673,7 +673,7 @@ def generate_feedback_report():
             gemini_response = call_gemini_api(final_prompt, "", api_key)
         else:
             # Process normally if feedbacks are under threshold
-            formatted_data = json.dumps(negative_feedbacks_data, ensure_ascii=False)
+            formatted_data = json.dumps(analysis_feedbacks_data, ensure_ascii=False)
             gemini_response = call_gemini_api(prompt, formatted_data, api_key)
         
         if not gemini_response:
