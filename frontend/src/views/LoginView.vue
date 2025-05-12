@@ -30,10 +30,6 @@
   
         <button @click="login" class="login-button">Đăng nhập</button>
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-  
-        <div class="forgot-password" @click="forgotPassword">
-          <a href="#">Quên mật khẩu?</a>
-        </div>
       </div>
     </div>
   </template>
