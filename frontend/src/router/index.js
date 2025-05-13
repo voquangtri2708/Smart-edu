@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/LoginView.vue';
-import HomePageView from '@/views/HomePageView.vue';
 import StudentFeedback from '@/views/student/StudentFeedback.vue';
 import AdminFeedbackManagement from '@/views/admin/FeedbackManagement.vue';
 import AdminFeedbackStats from '@/views/admin/FeedbackStats.vue';
@@ -43,7 +42,17 @@ import GradeTypeManagement from '@/views/admin/GradeTypeManagement.vue';
 import StudentGradesView from '@/views/student/StudentGradesView.vue';
 
 const routes = [
-  { path: "/", component: HomePageView },
+  { 
+    path: "/", 
+    name: "home",
+    redirect: to => {
+      const userRole = localStorage.getItem('user_role');
+      if (userRole === 'admin') return '/admin/stats/feedback';
+      if (userRole === 'teacher') return '/teacher/schedule';
+      if (userRole === 'student') return '/student/schedule';
+      return '/login'; // if no role found, redirect to login
+    }
+  },
   { path: "/login", component: Login },
   { path: "/student-feedbacks", component: StudentFeedback },
   { path: "/feedbacks", component: AdminFeedbackManagement },
@@ -367,9 +376,17 @@ router.beforeEach((to, from, next) => {
     return;
   } 
   
-  // Đã đăng nhập mà cố vào trang login thì chuyển về trang chủ
+  // Đã đăng nhập mà cố vào trang login thì chuyển hướng theo role
   if (userRole && to.path === "/login") {
-    next("/"); 
+    if (userRole === "admin") {
+      next("/admin/stats/feedback"); // Admin -> FeedbackStats
+    } else if (userRole === "teacher") {
+      next("/teacher/schedule"); // Teacher -> Lịch dạy
+    } else if (userRole === "student") {
+      next("/student/schedule"); // Student -> Lịch học
+    } else {
+      next("/");
+    }
     return;
   }
   

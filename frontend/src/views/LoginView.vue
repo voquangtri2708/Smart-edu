@@ -82,7 +82,17 @@
       localStorage.setItem("teacher_id", response.data.teacher_id);
     }
     
-    router.push("/");
+    // Chuyển hướng người dùng dựa vào role
+    const role = response.data.role;
+    if (role === "admin") {
+      router.push("/admin/stats/feedback"); // Admin -> FeedbackStats
+    } else if (role === "teacher") {
+      router.push("/teacher/schedule"); // Teacher -> Lịch dạy
+    } else if (role === "student") {
+      router.push("/student/schedule"); // Student -> Lịch học
+    } else {
+      router.push("/");
+    }
   } catch (error) {
       if (error.response) {
         switch (error.response.status) {
@@ -99,10 +109,6 @@
         errorMessage.value = "Lỗi kết nối đến server";
       }
     }
-  };
-  
-  const forgotPassword = () => {
-    alert("Chức năng chưa cập nhật!");
   };
   </script>
   

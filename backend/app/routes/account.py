@@ -213,12 +213,13 @@ def update_profile():
     if g.role == 'student' and g.student_id:
         # Update student profile
         student = Student.query.get_or_404(g.student_id)
-        
-        # Only allow updating certain fields
+          # Only allow updating certain fields
         if 'email' in data:
             student.email = data['email']
         if 'phone_number' in data:
             student.phone_number = data['phone_number']
+        if 'address' in data:
+            student.address = data['address']
         
         db.session.commit()
         return jsonify({"message": "Hồ sơ sinh viên đã được cập nhật thành công"})
@@ -226,12 +227,13 @@ def update_profile():
     elif g.role == 'teacher' and g.teacher_id:
         # Update teacher profile
         teacher = Teacher.query.get_or_404(g.teacher_id)
-        
-        # Only allow updating certain fields
+          # Only allow updating certain fields
         if 'email' in data:
             teacher.email = data['email']
         if 'phone_number' in data:
             teacher.phone_number = data['phone_number']
+        if 'address' in data:
+            teacher.address = data['address']
         if 'bio' in data:
             teacher.bio = data['bio']
         
@@ -240,3 +242,30 @@ def update_profile():
         
     else:
         return jsonify({"message": "Không tìm thấy thông tin người dùng để cập nhật"}), 404
+
+@account_bp.route('/change-password', methods=['PUT'])
+@auth_required
+def change_password():
+    """
+    Change user password.
+    Required fields in request body:
+    - old_password: current password
+    - new_password: new password
+    """
+    data = request.get_json()
+    
+    if 'old_password' not in data or 'new_password' not in data:
+        return jsonify({"message": "Mật khẩu cũ và mật khẩu mới không được để trống"}), 400
+        
+    # Get the account from database
+    account = Account.query.get_or_404(g.user_id)
+    
+    # Verify the old password
+    if not account.check_password(data['old_password']):
+        return jsonify({"message": "Mật khẩu cũ không chính xác"}), 401
+    
+    # Set the new password
+    account.set_password(data['new_password'])
+    
+    db.session.commit()
+    return jsonify({"message": "Mật khẩu đã được thay đổi thành công"})

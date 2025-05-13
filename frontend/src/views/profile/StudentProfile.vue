@@ -86,7 +86,7 @@
               
               <div class="mb-3">
                 <label class="form-label">Địa chỉ</label>
-                <textarea class="form-control" v-model="editedStudent.address" rows="2" disabled></textarea>
+                <textarea class="form-control" v-model="editedStudent.address" rows="2" :disabled="!isEditing"></textarea>
               </div>
               
               <div v-if="isEditing" class="d-grid gap-2">
@@ -130,6 +130,36 @@
               <p v-if="!isEditing" class="text-muted small mt-2">Bấm "Chỉnh sửa" để đổi mật khẩu</p>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal đổi mật khẩu -->
+  <div class="modal fade" :class="{ 'show d-block': showPasswordModal }" tabindex="-1" role="dialog" aria-hidden="true" :style="showPasswordModal ? 'background-color: rgba(0,0,0,0.5);' : ''">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Đổi mật khẩu</h5>
+          <button type="button" class="btn-close" @click="showPasswordModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Mật khẩu hiện tại</label>
+            <input type="password" class="form-control" v-model="oldPassword" placeholder="Nhập mật khẩu hiện tại">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mật khẩu mới</label>
+            <input type="password" class="form-control" v-model="newPassword" placeholder="Nhập mật khẩu mới">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Xác nhận mật khẩu mới</label>
+            <input type="password" class="form-control" v-model="confirmPassword" placeholder="Nhập lại mật khẩu mới">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="showPasswordModal = false">Hủy</button>
+          <button type="button" class="btn btn-primary" @click="changePassword">Lưu thay đổi</button>
         </div>
       </div>
     </div>
@@ -202,7 +232,8 @@ const saveProfile = async () => {
     // Chỉ gửi các trường được phép cập nhật
     const updateData = {
       email: editedStudent.email,
-      phone_number: editedStudent.phone_number
+      phone_number: editedStudent.phone_number,
+      address: editedStudent.address
     };
     
     await api.put(`/profile`, updateData, {
@@ -214,6 +245,7 @@ const saveProfile = async () => {
     // Update local data
     student.value.email = editedStudent.email;
     student.value.phone_number = editedStudent.phone_number;
+    student.value.address = editedStudent.address;
     
     // Exit edit mode
     isEditing.value = false;
@@ -224,9 +256,46 @@ const saveProfile = async () => {
   }
 };
 
+const oldPassword = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
+const showPasswordModal = ref(false);
+
 const openChangePasswordModal = () => {
-  // TODO: Implement password change functionality
-  showMessage('Chức năng đang được phát triển!', 'info');
+  oldPassword.value = '';
+  newPassword.value = '';
+  confirmPassword.value = '';
+  showPasswordModal.value = true;
+};
+
+const changePassword = async () => {
+  // Validate password fields
+  if (!oldPassword.value || !newPassword.value || !confirmPassword.value) {
+    showMessage('Vui lòng nhập đầy đủ thông tin', 'warning');
+    return;
+  }
+  
+  if (newPassword.value !== confirmPassword.value) {
+    showMessage('Mật khẩu mới và xác nhận mật khẩu không khớp', 'warning');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('auth_token');
+    await api.put('/change-password', {
+      old_password: oldPassword.value,
+      new_password: newPassword.value
+    }, {
+      headers: {
+        'Authorization': token
+      }
+    });
+    
+    showPasswordModal.value = false;
+    showMessage('Mật khẩu đã được thay đổi thành công', 'success');
+  } catch (error) {
+    showMessage('Không thể thay đổi mật khẩu: ' + (error.response?.data?.message || error.message), 'danger');
+  }
 };
 
 const showMessage = (text, type = 'success') => {
