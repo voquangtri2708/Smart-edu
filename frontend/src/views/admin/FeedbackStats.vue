@@ -6,9 +6,9 @@
           <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h4 class="mb-0">Báo cáo và thống kê đánh giá của sinh viên</h4>
             <div>
-              <button @click="openReportModal" class="btn btn-light btn-sm me-2">
+              <!-- <button @click="openReportModal" class="btn btn-light btn-sm me-2">
                 <i class="bi bi-file-earmark-text me-1"></i> Tạo báo cáo
-              </button>
+              </button> -->
               <button @click="forceRenderCharts" class="btn btn-light btn-sm me-2">
                 <i class="bi bi-arrow-clockwise me-1"></i> Cập nhật biểu đồ
               </button>

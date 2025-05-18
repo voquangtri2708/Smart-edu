@@ -16,9 +16,9 @@
         </div>
         
         <div v-if="menuOpen.study" class="submenu">
-          <router-link to="/subjects" class="submenu-item" active-class="active">
+          <!-- <router-link to="/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
-          </router-link>
+          </router-link> -->
           <router-link to="/student/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3 me-2"></i>Lịch học
           </router-link>
@@ -78,9 +78,9 @@
         </div>
         
         <div v-if="menuOpen.teaching" class="submenu">
-          <router-link to="/subjects" class="submenu-item" active-class="active">
+          <!-- <router-link to="/subjects" class="submenu-item" active-class="active">
             <i class="bi bi-journal-bookmark me-2"></i>Danh sách môn học
-          </router-link>
+          </router-link> -->
           <router-link to="/teacher/schedule" class="submenu-item" active-class="active">
             <i class="bi bi-calendar3-week me-2"></i>Lịch dạy
           </router-link>

@@ -79,7 +79,7 @@
                         </td>
                       </tr>
                       <!-- Tổng điểm -->
-                      <tr class="table-active fw-bold">
+                      <!-- <tr class="table-active fw-bold">
                         <td colspan="3" class="text-end">Tổng điểm trung bình:</td>
                         <td class="text-center">
                           <span :class="getScoreClass(getAverageScore(classGrades))">
@@ -91,7 +91,7 @@
                             {{ getStatusText(getAverageScore(classGrades)) }}
                           </span>
                         </td>
-                      </tr>
+                      </tr> -->
                     </tbody>
                   </table>
                 </div>
@@ -99,7 +99,7 @@
             </div>
             
             <!-- Tổng kết học tập -->
-            <div class="card">
+            <!-- <div class="card">
               <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">Tổng kết học tập</h5>
               </div>
@@ -128,7 +128,7 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </div> -->
           </div>
           
           <!-- No grades found -->

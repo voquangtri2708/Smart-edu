@@ -159,21 +159,6 @@ CREATE TABLE grade
     CONSTRAINT check_score_range CHECK (score >= 0 AND score <= 10)
 );
 
--- 14. Bảng Notification
-CREATE TABLE notification
-(
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    type ENUM ('INFO', 'WARNING', 'ERROR') NOT NULL,
-    priority ENUM ('LOW', 'MEDIUM', 'HIGH') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_read BOOLEAN DEFAULT FALSE NOT NULL,
-    account_id INT,
-    CONSTRAINT fk_notification_account FOREIGN KEY (account_id) REFERENCES account (id) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
 -- 15. Bảng Feedbacks
 CREATE TABLE feedbacks
 (
