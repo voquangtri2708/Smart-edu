@@ -562,36 +562,43 @@ const saveTeacher = async () => {
       // Create new teacher
       const teacherData = { ...currentTeacher.value };
       
+      // Xử lý avatar nếu có
+      if (teacherData.avatar_data) {
+        delete teacherData.avatar_url; // Xóa URL tạm thời (chứa base64)
+        delete teacherData.avatar_data; // Xóa dữ liệu ảnh tạm thời
+      }
+      
       // Tạo giảng viên
       const response = await api.post('/teachers', teacherData, {
         headers: { 'Authorization': token }
       });
+      
+      // Lấy ID của giảng viên mới tạo
+      const teacherId = response.data.id;
       
       // Create account for new teacher
       if (accountData.value.username && accountData.value.password) {
         await api.post('/accounts', {
           username: accountData.value.username,
           password: accountData.value.password,
-          identity_type: 'TEACHER',
-          identity_id: response.data.id
+          email: currentTeacher.value.email,
+          phone_number: currentTeacher.value.phone_number,
+          teacher_id: teacherId,
+          role: 'teacher',
+          is_active: true
         }, {
           headers: { 'Authorization': token }
         });
       }
       
-      // Đợi ID được trả về sau khi tạo xong
-      if (response.data && response.data.id) {
-        teacherData.id = response.data.id;
-        
-        // Upload avatar nếu có
-        if (currentTeacher.value.avatar_data) {
-          await api.post('/upload-avatar', {
-            image: currentTeacher.value.avatar_data,
-            teacher_id: teacherData.id
-          }, {
-            headers: { 'Authorization': token }
-          });
-        }
+      // Upload avatar nếu có (sau khi đã tạo xong giảng viên)
+      if (currentTeacher.value.avatar_data) {
+        await api.post('/upload-avatar', {
+          image: currentTeacher.value.avatar_data,
+          teacher_id: teacherId
+        }, {
+          headers: { 'Authorization': token }
+        });
       }
       
       showMessage('Giảng viên mới đã được tạo thành công!');

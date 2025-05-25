@@ -40,7 +40,7 @@ def create_teacher():
     )
     db.session.add(new_teacher)
     db.session.commit()
-    return jsonify({"message": "Teacher created successfully"}), 201
+    return jsonify({"message": "Teacher created successfully", "id": new_teacher.id}), 201
 
 @teacher_bp.route('/teachers', methods=['GET'])
 @admin_required

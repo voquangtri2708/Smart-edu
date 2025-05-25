@@ -1,9 +1,7 @@
--- Tạo cơ sở dữ liệu
-CREATE DATABASE IF NOT EXISTS smartedu1;
+CREATE DATABASE IF NOT EXISTS smartedu;
 
-USE smartedu1;
+USE smartedu;
 
--- 1. Bảng student
 CREATE TABLE student
 (
     id              CHAR(11) PRIMARY KEY,
@@ -17,7 +15,6 @@ CREATE TABLE student
     avatar_url      VARCHAR(255)    DEFAULT NULL
 );
 
--- 2. Bảng teacher
 CREATE TABLE teacher
 (
     id                  CHAR(11) PRIMARY KEY,
@@ -32,7 +29,6 @@ CREATE TABLE teacher
     bio                 TEXT
 );
 
--- 3. Bảng subject
 CREATE TABLE subject
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -42,7 +38,6 @@ CREATE TABLE subject
     description TEXT
 );
 
--- 4. Bảng Campus
 CREATE TABLE campus
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -50,7 +45,6 @@ CREATE TABLE campus
     address VARCHAR(255) NOT NULL
 );
 
--- 5. Bảng Grade Type
 CREATE TABLE grade_type
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -59,7 +53,6 @@ CREATE TABLE grade_type
     description TEXT
 );
 
--- 6. Bảng account
 CREATE TABLE account
 (
     id           INT PRIMARY KEY AUTO_INCREMENT,
@@ -77,7 +70,6 @@ CREATE TABLE account
     CONSTRAINT fk_account_teacher FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 7. Bảng class
 CREATE TABLE class
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -89,7 +81,6 @@ CREATE TABLE class
     CONSTRAINT fk_class_subject FOREIGN KEY (subject_id) REFERENCES subject (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 8. Bảng Building
 CREATE TABLE building
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -98,7 +89,6 @@ CREATE TABLE building
     CONSTRAINT fk_building_campus FOREIGN KEY (campus_id) REFERENCES campus (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 9. Bảng Classroom
 CREATE TABLE classroom
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -109,7 +99,6 @@ CREATE TABLE classroom
     CONSTRAINT fk_classroom_building FOREIGN KEY (building_id) REFERENCES building (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 10. Bảng class_student
 CREATE TABLE class_student
 (
     class_id INT,
@@ -119,7 +108,6 @@ CREATE TABLE class_student
     CONSTRAINT fk_class_student_student FOREIGN KEY (student_id) REFERENCES student (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 11. Bảng class_teacher
 CREATE TABLE class_teacher
 (
     class_id INT,
@@ -129,7 +117,6 @@ CREATE TABLE class_teacher
     CONSTRAINT fk_class_teacher_teacher FOREIGN KEY (teacher_id) REFERENCES teacher (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 12. Bảng Schedule
 CREATE TABLE schedule
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -143,7 +130,6 @@ CREATE TABLE schedule
     CONSTRAINT fk_schedule_classroom FOREIGN KEY (classroom_id) REFERENCES classroom (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 13. Bảng Grade
 CREATE TABLE grade
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -159,7 +145,6 @@ CREATE TABLE grade
     CONSTRAINT check_score_range CHECK (score >= 0 AND score <= 10)
 );
 
--- 15. Bảng Feedbacks
 CREATE TABLE feedbacks
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -180,7 +165,6 @@ CREATE TABLE feedbacks
     CONSTRAINT fk_feedbacks_class FOREIGN KEY (class_id) REFERENCES class (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- 16. Bảng Exam (Kỳ kiểm tra)
 CREATE TABLE exam
 (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -230,23 +214,19 @@ CREATE TABLE exam_question
     CONSTRAINT fk_exam_question_question FOREIGN KEY (question_id) REFERENCES question (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- Thêm gender vào bảng student và teacher
 ALTER TABLE 
     student ADD COLUMN gender ENUM('MALE', 'FEMALE') NOT NULL;
 
 ALTER TABLE 
     teacher ADD COLUMN gender ENUM('MALE', 'FEMALE') NOT NULL;
 
--- Modify Grade table to reference exams
 ALTER TABLE grade
     ADD COLUMN exam_id INT AFTER class_id,
     ADD CONSTRAINT fk_grade_exam FOREIGN KEY (exam_id) REFERENCES exam (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Add face_encoding column to student table
 ALTER TABLE student
     ADD COLUMN face_encoding TEXT DEFAULT NULL;
 
--- Add face_encoding column to teacher table
 ALTER TABLE teacher
     ADD COLUMN face_encoding TEXT DEFAULT NULL;
 
@@ -285,9 +265,9 @@ CREATE TABLE student_exam_answer (
     student_id CHAR(11) NOT NULL,
     exam_id INT NOT NULL,
     question_id INT NOT NULL,
-    answer_text TEXT, -- Có thể là lựa chọn hoặc nội dung tự luận
-    is_correct BOOLEAN, -- Dùng cho câu hỏi auto chấm (MCQ, TRUE_FALSE)
-    score DOUBLE, -- Điểm chấm tay (hoặc auto nếu có)
+    answer_text TEXT,
+    is_correct BOOLEAN,
+    score DOUBLE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -295,7 +275,7 @@ CREATE TABLE student_exam_answer (
     CONSTRAINT fk_sea_exam FOREIGN KEY (exam_id) REFERENCES exam(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_sea_question FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE ON UPDATE CASCADE,
     
-    UNIQUE (student_id, exam_id, question_id) -- Mỗi học sinh chỉ trả lời 1 lần cho 1 câu hỏi trong 1 bài thi
+    UNIQUE (student_id, exam_id, question_id) 
 );
 
 
